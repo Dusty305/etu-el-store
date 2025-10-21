@@ -3,9 +3,9 @@ import mongoose from 'mongoose';
 import path from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
-import sessionMiddleware from './middleware/session.js';
+import { sessionMiddleware, corsMiddleware, errorMiddleware } from './middleware';
 import { attachUser } from './middleware/auth.js';
-import authRoutes from './routes/authRoutes.js';
+import { authRoutes } from './routes';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -15,15 +15,9 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/el-store-
     .catch(err => console.error('MongoDB connection error:', err));
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(sessionMiddleware);
 app.use(attachUser);
-app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(corsMiddleware);
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -35,10 +29,7 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-});
+app.use(errorMiddleware);
 
 app.use('*', (req, res) => {
   res.status(404).json({ error: 'Маршрут не найден' });

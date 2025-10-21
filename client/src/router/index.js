@@ -5,18 +5,18 @@ const routes = [
     {
         path: '/',
         name: 'Home',
-        component: () => import('../views/HomePage.vue')
+        component: () => import('../pages/HomePage.vue')
     },
     {
         path: '/profile',
         name: 'Profile',
-        component: () => import('../views/ProfilePage.vue'),
+        component: () => import('../pages/ProfilePage.vue'),
         meta: { requiresAuth: true }
     },
     {
         path: '/cart',
         name: 'Cart',
-        component: () => import('../views/CartPage.vue'),
+        component: () => import('../pages/CartPage.vue'),
         meta: { requiresAuth: true }
     }
 ];

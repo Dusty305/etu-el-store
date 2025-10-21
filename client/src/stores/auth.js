@@ -1,85 +1,102 @@
 import { defineStore } from 'pinia';
 import { authAPI } from '../api/auth.js';
+import { ref, computed } from 'vue';
 
-export const useAuthStore = defineStore('auth', {
-    state: () => ({
-        user: null,
-        isLoading: false,
-        error: null
-    }),
+export const useAuthStore = defineStore('auth', () => {
+    // Состояние (state)
+    const user = ref(null);
+    const isLoading = ref(false);
+    const error = ref(null);
 
-    getters: {
-        isAuthenticated: (state) => !!state.user,
-        isAdmin: (state) => state.user?.role === 'АДМИНИСТРАТОР',
-        userInfo: (state) => state.user
-    },
+    // Геттеры (getters)
+    const isAuthenticated = computed(() => !!user.value);
+    const isAdmin = computed(() => user.value?.role === 'АДМИНИСТРАТОР');
+    const userInfo = computed(() => user.value);
 
-    actions: {
-        async login(credentials) {
-            this.isLoading = true;
-            this.error = null;
+    // Действия (actions)
+    const login = async (credentials) => {
+        isLoading.value = true;
+        error.value = null;
 
-            try {
-                const response = await authAPI.login(credentials);
-                this.user = response.user;
-                return { success: true };
-            } catch (error) {
-                this.error = error.message || 'Ошибка входа';
-                return { success: false, error: this.error };
-            } finally {
-                this.isLoading = false;
-            }
-        },
-
-        async register(userData) {
-            this.isLoading = true;
-            this.error = null;
-
-            try {
-                const response = await authAPI.register(userData);
-                this.user = response.user;
-                return { success: true };
-            } catch (error) {
-                this.error = error.message || 'Ошибка регистрации';
-                return { success: false, error: this.error };
-            } finally {
-                this.isLoading = false;
-            }
-        },
-
-        async logout() {
-            this.isLoading = true;
-
-            try {
-                await authAPI.logout();
-                this.user = null;
-                this.error = null;
-                return { success: true };
-            } catch (error) {
-                this.error = error.message || 'Ошибка выхода';
-                return { success: false, error: this.error };
-            } finally {
-                this.isLoading = false;
-            }
-        },
-
-        async checkAuth() {
-            this.isLoading = true;
-
-            try {
-                const response = await authAPI.getCurrentUser();
-                this.user = response.user;
-                return { success: true };
-            } catch (error) {
-                this.user = null;
-                return { success: false };
-            } finally {
-                this.isLoading = false;
-            }
-        },
-
-        clearError() {
-            this.error = null;
+        try {
+            const response = await authAPI.login(credentials);
+            user.value = response.user;
+            return { success: true };
+        } catch (err) {
+            error.value = err.message || 'Ошибка входа';
+            return { success: false, error: error.value };
+        } finally {
+            isLoading.value = false;
         }
-    }
+    };
+
+    const register = async (userData) => {
+        isLoading.value = true;
+        error.value = null;
+
+        try {
+            const response = await authAPI.register(userData);
+            user.value = response.user;
+            return { success: true };
+        } catch (err) {
+            error.value = err.message || 'Ошибка регистрации';
+            return { success: false, error: error.value };
+        } finally {
+            isLoading.value = false;
+        }
+    };
+
+    const logout = async () => {
+        isLoading.value = true;
+
+        try {
+            await authAPI.logout();
+            user.value = null;
+            error.value = null;
+            return { success: true };
+        } catch (err) {
+            error.value = err.message || 'Ошибка выхода';
+            return { success: false, error: error.value };
+        } finally {
+            isLoading.value = false;
+        }
+    };
+
+    const checkAuth = async () => {
+        isLoading.value = true;
+
+        try {
+            const response = await authAPI.getCurrentUser();
+            user.value = response.user;
+            return { success: true };
+        } catch (err) {
+            user.value = null;
+            return { success: false };
+        } finally {
+            isLoading.value = false;
+        }
+    };
+
+    const clearError = () => {
+        error.value = null;
+    };
+
+    return {
+        // state
+        user,
+        isLoading,
+        error,
+
+        // getters
+        isAuthenticated,
+        isAdmin,
+        userInfo,
+
+        // actions
+        login,
+        register,
+        logout,
+        checkAuth,
+        clearError
+    };
 });
