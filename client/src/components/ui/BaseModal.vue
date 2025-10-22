@@ -15,11 +15,10 @@ defineProps({
   }
 });
 
-defineEmits(['close']);
+const emit = defineEmits(['close']);
 
 const handleOverlayClick = () => {
-  // Закрытие модального окна при клике на оверлей
-  defineEmits().close();
+  emit('close');
 };
 </script>
 

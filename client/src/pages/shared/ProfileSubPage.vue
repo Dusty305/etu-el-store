@@ -16,8 +16,8 @@
 
 <script setup>
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/auth.js';
-import BaseButton from '../components/ui/BaseButton.vue';
+import { useAuthStore } from '../../stores/auth.js';
+import BaseButton from '../../components/ui/BaseButton.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();

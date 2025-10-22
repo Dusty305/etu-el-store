@@ -1,20 +1,17 @@
 <template>
   <div id="app">
-    <AppHeader />
     <router-view />
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import {onBeforeMount} from 'vue';
 import { useAuthStore } from './stores/auth.js';
-import AppHeader from './components/layout/AppHeader.vue';
 
 const authStore = useAuthStore();
 
-onMounted(() => {
-  // Проверяем авторизацию при загрузке приложения
-  authStore.checkAuth();
+onBeforeMount(async () => {
+  await authStore.checkAuth();
 });
 </script>
 

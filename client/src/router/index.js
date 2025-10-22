@@ -1,23 +1,74 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth.js';
 
+const authRoute = {
+    path: '/auth',
+    name: 'Авторизация',
+    component: () => import('../pages/AuthPage.vue')
+};
+
 const routes = [
+    authRoute,
     {
         path: '/',
-        name: 'Home',
-        component: () => import('../pages/HomePage.vue')
+        component: () => import('../pages/user/UserPage.vue'),
+        children: [
+            {
+                path: 'main',
+                name: 'Главная страница',
+                component: () => import('../pages/user/ProductsSubPage.vue'),
+                meta: { requiresAuth: true }
+            },
+            {
+                path: 'profile',
+                name: 'Профиль',
+                component: () => import('../pages/shared/ProfileSubPage.vue'),
+                meta: { requiresAuth: true }
+            },
+            {
+                path: 'cart',
+                name: 'Cart',
+                component: () => import('../pages/user/CartSubPage.vue'),
+                meta: { requiresAuth: true }
+            },
+            {
+                path: '',
+                redirect: { name: 'Главная страница' }
+            }
+        ]
     },
     {
-        path: '/profile',
-        name: 'Profile',
-        component: () => import('../pages/ProfilePage.vue'),
-        meta: { requiresAuth: true }
-    },
-    {
-        path: '/cart',
-        name: 'Cart',
-        component: () => import('../pages/CartPage.vue'),
-        meta: { requiresAuth: true }
+        path: '/admin',
+        name: 'Админ панель',
+        component: () => import('../pages/admin/AdminPage.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true },
+        children: [
+            {
+                path: 'profile',
+                name: 'ПрофильАдмин',
+                component: () => import('../pages/shared/ProfileSubPage.vue'),
+                meta: { requiresAuth: true }
+            },
+            {
+                path: 'products',
+                name: 'Товары',
+                component: () => import('../pages/admin/ProductsSubPage.vue'),
+            },
+            {
+                path: 'orders',
+                name: 'Заказы',
+                component: () => import('../pages/admin/OrdersSubPage.vue'),
+            },
+            {
+                path: 'categories',
+                name: 'Категории',
+                component: () => import('../pages/admin/CategoriesSubPage.vue'),
+            },
+            {
+                path: '',
+                redirect: { name: 'Товары' }
+            }
+        ]
     }
 ];
 
@@ -26,14 +77,22 @@ const router = createRouter({
     routes
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
     const authStore = useAuthStore();
 
-    if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-        next('/');
-    } else {
-        next();
+    if (to.name === authRoute.name && authStore.isAuthenticated) {
+        return { name: 'Главная страница' };
     }
+
+    if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+        return { name: 'Авторизация' };
+    }
+
+    if (to.meta.requiresAdmin && !authStore.isAdmin) {
+        return { name: 'Главная страница' };
+    }
+
+    return true;
 });
 
 export default router;

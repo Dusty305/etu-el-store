@@ -1,7 +1,7 @@
 <template>
   <div class="home-page">
     <main class="main-content">
-      <h2>Добро пожаловать в ElectroStore!</h2>
+      <h2>Добро пожаловать в El-store!</h2>
       <p>Лучший магазин электроники с выгодными ценами</p>
 
       <div v-if="!authStore.isAuthenticated" class="welcome-section">
@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import { useAuthStore } from '../stores/auth.js';
+import { useAuthStore } from '../../stores/auth.js';
 
 const authStore = useAuthStore();
 </script>

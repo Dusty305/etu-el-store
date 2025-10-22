@@ -2,7 +2,7 @@
   <header class="app-header">
     <div class="header-content">
       <div class="logo">
-        <h1>ElectroStore</h1>
+        <h1>El-store</h1>
       </div>
 
       <nav class="navigation">
@@ -23,37 +23,16 @@
         </div>
       </nav>
     </div>
-
-    <!-- Модальное окно авторизации -->
-    <BaseModal :isOpen="isAuthModalOpen" @close="closeAuthModal">
-      <component
-          :is="currentAuthComponent"
-          @success="handleAuthSuccess"
-          @switch-to-login="switchToLogin"
-          @switch-to-register="switchToRegister"
-      />
-    </BaseModal>
   </header>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth.js';
 import BaseButton from '../ui/BaseButton.vue';
-import BaseModal from '../ui/BaseModal.vue';
-import LoginForm from '../auth/LoginForm.vue';
-import RegisterForm from '../auth/RegisterForm.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
-
-const isAuthModalOpen = ref(false);
-const authMode = ref('login'); // 'login' или 'register'
-
-const currentAuthComponent = computed(() => {
-  return authMode.value === 'login' ? LoginForm : RegisterForm;
-});
 
 const handleCartClick = () => {
   if (authStore.isAuthenticated) {
@@ -65,28 +44,9 @@ const handleAuthClick = () => {
   if (authStore.isAuthenticated) {
     router.push('/profile');
   } else {
-    isAuthModalOpen.value = true;
+    // Перенаправляем на страницу авторизации
+    router.push('/auth');
   }
-};
-
-const closeAuthModal = () => {
-  isAuthModalOpen.value = false;
-  authStore.clearError();
-};
-
-const handleAuthSuccess = () => {
-  closeAuthModal();
-  // Можно добавить дополнительную логику после успешной авторизации
-};
-
-const switchToLogin = () => {
-  authMode.value = 'login';
-  authStore.clearError();
-};
-
-const switchToRegister = () => {
-  authMode.value = 'register';
-  authStore.clearError();
 };
 </script>
 
