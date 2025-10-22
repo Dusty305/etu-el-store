@@ -33,14 +33,21 @@ export default new mongoose.Schema({
         }
     },
     paymentInfo: {
-        method: {
+        cardNumber: {
             type: String,
-            default: 'CARD'
+            required: true,
+            match: [/^\d{16}$/, 'Неверный формат номера карты'],
         },
-        status: {
+        cvc: {
             type: String,
-            default: 'PENDING'
-        }
+            required: true,
+            match: [/^\d{3}$/, 'CVC должен содержать 3 или 4 цифры'],
+        },
+        expirationDate: {
+            type: String,
+            required: true,
+            match: [/^(0[1-9]|1[0-2])\/?([0-9]{2})$/, 'Неверный формат срока действия (MM/YY)'],
+        },
     },
     status: {
         type: String,

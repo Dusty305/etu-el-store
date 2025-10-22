@@ -1,11 +1,12 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import path from 'path';
-import cors from 'cors';
 import { fileURLToPath } from 'url';
-import { sessionMiddleware, corsMiddleware, errorMiddleware } from './middleware';
+import sessionMiddleware from './middleware/session.js';
+import corsMiddleware from './middleware/cors.js';
+import errorMiddleware from './middleware/errorHandler.js';
 import { attachUser } from './middleware/auth.js';
-import { authRoutes } from './routes';
+import authRoutes from './routes/authRoutes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
