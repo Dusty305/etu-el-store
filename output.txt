@@ -1,0 +1,2137 @@
+//client\src\api\auth.js
+import { SERVER_ADDRESS, handleResponse } from "./utils.js";
+
+export const API_BASE = 'api/auth';
+
+
+export const authAPI = {
+    async login(credentials) {
+        const response = await fetch(`${SERVER_ADDRESS}/${API_BASE}/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(credentials),
+            credentials: 'include'
+        });
+
+        return handleResponse(response);
+    },
+
+    async register(userData) {
+        const response = await fetch(`${SERVER_ADDRESS}/${API_BASE}/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
+            credentials: 'include'
+        });
+
+        return handleResponse(response);
+    },
+
+    async logout() {
+        const response = await fetch(`${SERVER_ADDRESS}/${API_BASE}/logout`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+
+        return handleResponse(response);
+    },
+
+    async getCurrentUser() {
+        const response = await fetch(`${SERVER_ADDRESS}/${API_BASE}/me`, {
+            credentials: 'include'
+        });
+
+        return handleResponse(response);
+    }
+};
+//client\src\api\utils.js
+export const SERVER_ADDRESS = 'http://localhost:5000'
+
+export async function handleResponse(response) {
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+}
+//client\src\App.vue
+<template>
+  <div id="app">
+    <router-view />
+  </div>
+</template>
+
+<script setup>
+import {onBeforeMount} from 'vue';
+import { useAuthStore } from './stores/auth.js';
+
+const authStore = useAuthStore();
+
+onBeforeMount(async () => {
+  await authStore.checkAuth();
+});
+</script>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #333;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+</style>
+//client\src\components\auth\AuthModal.vue
+<template>
+  <BaseModal :isOpen="isOpen" @close="handleClose">
+    <component
+        :is="currentComponent"
+        @success="handleSuccess"
+        @switch-to-login="switchToLogin"
+        @switch-to-register="switchToRegister"
+    />
+  </BaseModal>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue';
+import { useAuthStore } from '../../stores/auth.js';
+import BaseModal from '../ui/BaseModal.vue';
+import LoginForm from '../auth/LoginForm.vue';
+import RegisterForm from '../auth/RegisterForm.vue';
+
+const props = defineProps({
+  isOpen: {
+    type: Boolean,
+    required: true
+  },
+  initialMode: {
+    type: String,
+    default: 'login',
+    validator: (value) => ['login', 'register'].includes(value)
+  }
+});
+
+const emit = defineEmits(['close', 'success']);
+
+const authStore = useAuthStore();
+const authMode = ref(props.initialMode);
+
+const currentComponent = computed(() => {
+  return authMode.value === 'login' ? LoginForm : RegisterForm;
+});
+
+const handleClose = () => {
+  emit('close');
+  authStore.clearError();
+};
+
+const handleSuccess = () => {
+  emit('success');
+  handleClose();
+};
+
+const switchToLogin = () => {
+  authMode.value = 'login';
+  authStore.clearError();
+};
+
+const switchToRegister = () => {
+  authMode.value = 'register';
+  authStore.clearError();
+};
+</script>
+//client\src\components\auth\LoginForm.vue
+<template>
+  <div class="login-form">
+    <h2>Вход в аккаунт</h2>
+    <form @submit.prevent="handleSubmit">
+      <BaseInput
+          id="login"
+          label="Логин или Email"
+          v-model="form.login"
+          required
+          :error="errors.login"
+      />
+
+      <BaseInput
+          id="password"
+          label="Пароль"
+          type="password"
+          v-model="form.password"
+          required
+          :error="errors.password"
+      />
+
+      <div v-if="authStore.error" class="form-error">
+        {{ authStore.error }}
+      </div>
+
+      <BaseButton
+          type="submit"
+          :disabled="authStore.isLoading"
+          class="submit-button"
+      >
+        {{ authStore.isLoading ? 'Вход...' : 'Войти' }}
+      </BaseButton>
+    </form>
+
+    <div class="form-footer">
+      <p>Нет аккаунта?</p>
+      <BaseButton variant="outline" @click="$emit('switch-to-register')">
+        Зарегистрироваться
+      </BaseButton>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { reactive, computed } from 'vue';
+import { useAuthStore } from '../../stores/auth.js';
+import BaseInput from '../ui/BaseInput.vue';
+import BaseButton from '../ui/BaseButton.vue';
+
+const authStore = useAuthStore();
+
+const emit = defineEmits(['success', 'switch-to-register']);
+
+const form = reactive({
+  login: '',
+  password: ''
+});
+
+const errors = computed(() => {
+  const errs = {};
+  if (!form.login) errs.login = 'Обязательное поле';
+  if (!form.password) errs.password = 'Обязательное поле';
+  return errs;
+});
+
+const handleSubmit = async () => {
+  if (Object.keys(errors.value).length > 0) return;
+
+  authStore.clearError();
+  const result = await authStore.login(form);
+
+  if (result.success) {
+    emit('success');
+  }
+};
+</script>
+
+<style scoped>
+.login-form {
+  text-align: center;
+}
+
+.submit-button {
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.form-error {
+  color: #dc3545;
+  margin: 1rem 0;
+}
+
+.form-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+</style>
+//client\src\components\auth\RegisterForm.vue
+<template>
+  <div class="register-form">
+    <h2>Регистрация</h2>
+    <form @submit.prevent="handleSubmit">
+      <BaseInput
+          id="login"
+          label="Логин"
+          v-model="form.login"
+          required
+          :error="errors.login"
+      />
+
+      <BaseInput
+          id="displayName"
+          label="Отображаемое имя"
+          v-model="form.displayName"
+          required
+          :error="errors.displayName"
+      />
+
+      <BaseInput
+          id="email"
+          label="Email"
+          type="email"
+          v-model="form.email"
+          required
+          :error="errors.email"
+      />
+
+      <BaseInput
+          id="password"
+          label="Пароль"
+          type="password"
+          v-model="form.password"
+          required
+          :error="errors.password"
+      />
+
+      <BaseInput
+          id="confirmPassword"
+          label="Подтверждение пароля"
+          type="password"
+          v-model="form.confirmPassword"
+          required
+          :error="errors.confirmPassword"
+      />
+
+      <div v-if="authStore.error" class="form-error">
+        {{ authStore.error }}
+      </div>
+
+      <BaseButton
+          type="submit"
+          :disabled="authStore.isLoading"
+          class="submit-button"
+      >
+        {{ authStore.isLoading ? 'Регистрация...' : 'Зарегистрироваться' }}
+      </BaseButton>
+    </form>
+
+    <div class="form-footer">
+      <p>Уже есть аккаунт?</p>
+      <BaseButton variant="outline" @click="$emit('switch-to-login')">
+        Войти
+      </BaseButton>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { reactive, computed } from 'vue';
+import { useAuthStore } from '../../stores/auth.js';
+import BaseInput from '../ui/BaseInput.vue';
+import BaseButton from '../ui/BaseButton.vue';
+
+const authStore = useAuthStore();
+
+const emit = defineEmits(['success', 'switch-to-login']);
+
+const form = reactive({
+  login: '',
+  displayName: '',
+  email: '',
+  password: '',
+  confirmPassword: ''
+});
+
+const errors = computed(() => {
+  const errs = {};
+  if (!form.login) errs.login = 'Обязательное поле';
+  if (!form.displayName) errs.displayName = 'Обязательное поле';
+  if (!form.email) errs.email = 'Обязательное поле';
+  if (!form.password) errs.password = 'Обязательное поле';
+  if (!form.confirmPassword) errs.confirmPassword = 'Обязательное поле';
+  if (form.password && form.password.length < 6) errs.password = 'Пароль должен быть не менее 6 символов';
+  if (form.password !== form.confirmPassword) errs.confirmPassword = 'Пароли не совпадают';
+  return errs;
+});
+
+const handleSubmit = async () => {
+  if (Object.keys(errors.value).length > 0) return;
+
+  authStore.clearError();
+  const { confirmPassword, ...userData } = form;
+  const result = await authStore.register(userData);
+
+  if (result.success) {
+    emit('success');
+  }
+};
+</script>
+
+<style scoped>
+.register-form {
+  text-align: center;
+}
+
+.submit-button {
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.form-error {
+  color: #dc3545;
+  margin: 1rem 0;
+}
+
+.form-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+</style>
+//client\src\components\layout\AppHeader.vue
+<template>
+  <header class="app-header">
+    <div class="header-content">
+      <div class="logo">
+        <h1>El-store</h1>
+      </div>
+
+      <nav class="navigation">
+        <div class="nav-item" @click="handleCartClick">
+          <BaseButton
+              :disabled="!authStore.isAuthenticated"
+              variant="outline"
+              class="cart-button"
+          >
+            🛒 Корзина
+          </BaseButton>
+        </div>
+
+        <div class="nav-item" @click="handleAuthClick">
+          <BaseButton variant="primary" class="auth-button">
+            {{ authStore.isAuthenticated ? '👤 Профиль' : 'Войти' }}
+          </BaseButton>
+        </div>
+      </nav>
+    </div>
+  </header>
+</template>
+
+<script setup>
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../../stores/auth.js';
+import BaseButton from '../ui/BaseButton.vue';
+
+const router = useRouter();
+const authStore = useAuthStore();
+
+const handleCartClick = () => {
+  if (authStore.isAuthenticated) {
+    router.push('/cart');
+  }
+};
+
+const handleAuthClick = () => {
+  if (authStore.isAuthenticated) {
+    router.push('/profile');
+  } else {
+    // Перенаправляем на страницу авторизации
+    router.push('/auth');
+  }
+};
+</script>
+
+<style scoped>
+.app-header {
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 1rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo h1 {
+  margin: 0;
+  color: #007bff;
+  font-size: 1.5rem;
+}
+
+.navigation {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.nav-item {
+  cursor: pointer;
+}
+
+.cart-button, .auth-button {
+  min-width: 100px;
+}
+</style>
+//client\src\components\ui\BaseButton.vue
+<template>
+  <button
+      :class="['base-button', variant, { disabled }]"
+      :disabled="disabled"
+      @click="$emit('click')"
+  >
+    <slot></slot>
+  </button>
+</template>
+
+<script setup>
+defineProps({
+  variant: {
+    type: String,
+    default: 'primary',
+    validator: (value) => ['primary', 'secondary', 'outline'].includes(value)
+  },
+  disabled: {
+    type: Boolean,
+    default: false
+  }
+});
+
+defineEmits(['click']);
+</script>
+
+<style scoped>
+.base-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.primary {
+  background: #007bff;
+  color: white;
+}
+
+.primary:hover:not(.disabled) {
+  background: #0056b3;
+}
+
+.secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.secondary:hover:not(.disabled) {
+  background: #545b62;
+}
+
+.outline {
+  background: transparent;
+  border: 1px solid #007bff;
+  color: #007bff;
+}
+
+.outline:hover:not(.disabled) {
+  background: #007bff;
+  color: white;
+}
+
+.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+</style>
+//client\src\components\ui\BaseInput.vue
+<template>
+  <div class="base-input">
+    <label v-if="label" :for="id" class="input-label">{{ label }}</label>
+    <input
+        :id="id"
+        :type="type"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :required="required"
+        @input="$emit('update:modelValue', $event.target.value)"
+        class="input-field"
+    />
+    <div v-if="error" class="input-error">{{ error }}</div>
+  </div>
+</template>
+
+<script setup>
+defineProps({
+  id: String,
+  label: String,
+  type: {
+    type: String,
+    default: 'text'
+  },
+  modelValue: [String, Number],
+  placeholder: String,
+  required: Boolean,
+  error: String
+});
+
+defineEmits(['update:modelValue']);
+</script>
+
+<style scoped>
+.base-input {
+  margin-bottom: 1rem;
+}
+
+.input-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.input-field {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.input-error {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+</style>
+//client\src\components\ui\BaseModal.vue
+<template>
+  <div v-if="isOpen" class="modal-overlay" @click="handleOverlayClick">
+    <div class="modal-content" @click.stop>
+      <button class="modal-close" @click="$emit('close')">×</button>
+      <slot></slot>
+    </div>
+  </div>
+</template>
+
+<script setup>
+defineProps({
+  isOpen: {
+    type: Boolean,
+    required: true
+  }
+});
+
+const emit = defineEmits(['close']);
+
+const handleOverlayClick = () => {
+  emit('close');
+};
+</script>
+
+<style scoped>
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  position: relative;
+  min-width: 400px;
+  max-width: 90vw;
+}
+
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+}
+</style>
+//client\src\main.js
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
+import router from './router';
+import App from './App.vue';
+
+const app = createApp(App);
+const pinia = createPinia();
+
+app.use(pinia);
+app.use(router);
+
+app.mount('#app');
+
+//client\src\pages\admin\AdminPage.vue
+<template>
+
+</template>
+
+<script setup>
+
+</script>
+
+<style scoped>
+
+</style>
+//client\src\pages\admin\CategoriesSubPage.vue
+<template>
+
+</template>
+
+<script setup>
+
+</script>
+
+<style scoped>
+
+</style>
+//client\src\pages\admin\OrdersSubPage.vue
+<template>
+
+</template>
+
+<script setup>
+
+</script>
+
+<style scoped>
+
+</style>
+//client\src\pages\admin\ProductsSubPage.vue
+<template>
+
+</template>
+
+<script setup>
+
+</script>
+
+<style scoped>
+
+</style>
+//client\src\pages\AuthPage.vue
+<template>
+  <div class="auth-page">
+    <AuthModal
+        :isOpen="true"
+        :initialMode="initialMode"
+        @close="handleModalClose"
+        @success="handleAuthSuccess"
+    />
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth.js';
+import AuthModal from '../components/auth/AuthModal.vue';
+
+const router = useRouter();
+const authStore = useAuthStore();
+
+const initialMode = ref('login');
+
+onMounted(() => {
+  if (authStore.isAuthenticated) {
+    router.push('/');
+    return;
+  }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const mode = urlParams.get('mode');
+  if (mode === 'register') {
+    initialMode.value = 'register';
+  }
+});
+
+const handleModalClose = () => {
+  if (window.history.length > 1) {
+    router.back();
+  } else {
+    router.push('/');
+  }
+};
+
+const handleAuthSuccess = () => {
+  router.push('/main');
+};
+</script>
+
+<style scoped>
+.auth-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>
+//client\src\pages\shared\ProfileSubPage.vue
+<template>
+  <div class="profile-page">
+    <h2>Профиль пользователя</h2>
+    <div v-if="authStore.userInfo" class="profile-info">
+      <p><strong>Имя:</strong> {{ authStore.userInfo.displayName }}</p>
+      <p><strong>Логин:</strong> {{ authStore.userInfo.login }}</p>
+      <p><strong>Email:</strong> {{ authStore.userInfo.email }}</p>
+      <p><strong>Роль:</strong> {{ authStore.userInfo.role }}</p>
+
+      <BaseButton @click="handleLogout" variant="secondary">
+        Выйти
+      </BaseButton>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../../stores/auth.js';
+import BaseButton from '../../components/ui/BaseButton.vue';
+
+const router = useRouter();
+const authStore = useAuthStore();
+
+const handleLogout = async () => {
+  await authStore.logout();
+  router.push('/');
+};
+</script>
+
+<style scoped>
+.profile-page {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.profile-info {
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+</style>
+//client\src\pages\user\CartSubPage.vue
+<template>
+  <div class="cart-page">
+    <h2>Корзина</h2>
+    <div class="empty-cart">
+      <p>Ваша корзина пуста</p>
+      <p>Перейдите в каталог, чтобы добавить товары</p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+// Пока пустая страница корзины
+</script>
+
+<style scoped>
+.cart-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.empty-cart {
+  text-align: center;
+  padding: 3rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+</style>
+//client\src\pages\user\OrdersSubPage.vue
+<template>
+Пустая страница
+</template>
+
+<script setup>
+
+</script>
+
+<style scoped>
+
+</style>
+//client\src\pages\user\ProductsSubPage.vue
+<template>
+  <div class="home-page">
+    <main class="main-content">
+      <h2>Добро пожаловать в El-store!</h2>
+      <p>Лучший магазин электроники с выгодными ценами</p>
+
+      <div v-if="!authStore.isAuthenticated" class="welcome-section">
+        <p>Войдите или зарегистрируйтесь, чтобы начать покупки</p>
+      </div>
+
+      <div v-else class="user-section">
+        <p>Привет, {{ authStore.userInfo?.displayName }}!</p>
+        <p>Начните покупки в нашем каталоге</p>
+      </div>
+    </main>
+  </div>
+</template>
+
+<script setup>
+import { useAuthStore } from '../../stores/auth.js';
+
+const authStore = useAuthStore();
+</script>
+
+<style scoped>
+.home-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.main-content {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.welcome-section, .user-section {
+  margin-top: 2rem;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+</style>
+//client\src\pages\user\UserPage.vue
+<template>
+  <AppHeader/>
+  <router-view></router-view>
+</template>
+
+<script setup>
+
+import AppHeader from "../../components/layout/AppHeader.vue";
+</script>
+
+<style scoped>
+
+</style>
+//client\src\router\index.js
+import { createRouter, createWebHistory } from 'vue-router';
+import { useAuthStore } from '../stores/auth.js';
+
+const authRoute = {
+    path: '/auth',
+    name: 'Авторизация',
+    component: () => import('../pages/AuthPage.vue')
+};
+
+const routes = [
+    authRoute,
+    {
+        path: '/',
+        component: () => import('../pages/user/UserPage.vue'),
+        children: [
+            {
+                path: 'main',
+                name: 'Главная страница',
+                component: () => import('../pages/user/ProductsSubPage.vue'),
+                meta: { requiresAuth: true }
+            },
+            {
+                path: 'profile',
+                name: 'Профиль',
+                component: () => import('../pages/shared/ProfileSubPage.vue'),
+                meta: { requiresAuth: true }
+            },
+            {
+                path: 'cart',
+                name: 'Cart',
+                component: () => import('../pages/user/CartSubPage.vue'),
+                meta: { requiresAuth: true }
+            },
+            {
+                path: '',
+                redirect: { name: 'Главная страница' }
+            },
+            {
+
+            }
+        ]
+    },
+    {
+        path: '/admin',
+        name: 'Админ панель',
+        component: () => import('../pages/admin/AdminPage.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true },
+        children: [
+            {
+                path: 'profile',
+                name: 'ПрофильАдмин',
+                component: () => import('../pages/shared/ProfileSubPage.vue'),
+                meta: { requiresAuth: true }
+            },
+            {
+                path: 'products',
+                name: 'Товары',
+                component: () => import('../pages/admin/ProductsSubPage.vue'),
+            },
+            {
+                path: 'orders',
+                name: 'Заказы',
+                component: () => import('../pages/admin/OrdersSubPage.vue'),
+            },
+            {
+                path: 'categories',
+                name: 'Категории',
+                component: () => import('../pages/admin/CategoriesSubPage.vue'),
+            },
+            {
+                path: '',
+                redirect: { name: 'Товары' }
+            }
+        ]
+    }
+];
+
+const router = createRouter({
+    history: createWebHistory(),
+    routes
+});
+
+router.beforeEach((to) => {
+    const authStore = useAuthStore();
+
+    if (to.name === authRoute.name && authStore.isAuthenticated) {
+        return { name: 'Главная страница' };
+    }
+
+    if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+        return { name: 'Авторизация' };
+    }
+
+    if (to.meta.requiresAdmin && !authStore.isAdmin) {
+        return { name: 'Главная страница' };
+    }
+
+    return true;
+});
+
+export default router;
+//client\src\stores\auth.js
+import { defineStore } from 'pinia';
+import { authAPI } from '../api/auth.js';
+import { ref, computed } from 'vue';
+
+export const useAuthStore = defineStore('auth', () => {
+    // Состояние (state)
+    const user = ref(null);
+    const isLoading = ref(false);
+    const error = ref(null);
+
+    // Геттеры (getters)
+    const isAuthenticated = computed(() => !!user.value);
+    const isAdmin = computed(() => user.value?.role === 'АДМИНИСТРАТОР');
+    const userInfo = computed(() => user.value);
+
+    // Действия (actions)
+    const login = async (credentials) => {
+        isLoading.value = true;
+        error.value = null;
+
+        try {
+            const response = await authAPI.login(credentials);
+            user.value = response.user;
+            return { success: true };
+        } catch (err) {
+            error.value = err.message || 'Ошибка входа';
+            return { success: false, error: error.value };
+        } finally {
+            isLoading.value = false;
+        }
+    };
+
+    const register = async (userData) => {
+        isLoading.value = true;
+        error.value = null;
+
+        try {
+            const response = await authAPI.register(userData);
+            user.value = response.user;
+            return { success: true };
+        } catch (err) {
+            error.value = err.message || 'Ошибка регистрации';
+            return { success: false, error: error.value };
+        } finally {
+            isLoading.value = false;
+        }
+    };
+
+    const logout = async () => {
+        isLoading.value = true;
+
+        try {
+            await authAPI.logout();
+            user.value = null;
+            error.value = null;
+            return { success: true };
+        } catch (err) {
+            error.value = err.message || 'Ошибка выхода';
+            return { success: false, error: error.value };
+        } finally {
+            isLoading.value = false;
+        }
+    };
+
+    const checkAuth = async () => {
+        isLoading.value = true;
+
+        try {
+            const response = await authAPI.getCurrentUser();
+            user.value = response.user;
+            return { success: true };
+        } catch (err) {
+            user.value = null;
+            return { success: false };
+        } finally {
+            isLoading.value = false;
+        }
+    };
+
+    const clearError = () => {
+        error.value = null;
+    };
+
+    return {
+        // state
+        user,
+        isLoading,
+        error,
+
+        // getters
+        isAuthenticated,
+        isAdmin,
+        userInfo,
+
+        // actions
+        login,
+        register,
+        logout,
+        checkAuth,
+        clearError
+    };
+});
+//client\vite.config.js
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  plugins: [vue()],
+  server: {
+    port: 3000, // Клиент работает на 3000 порту
+    proxy: {
+      // Проксирование API запросов на бэкенд-сервер
+      '/api': {
+        target: 'http://localhost:5000', // Ваш Express сервер
+        changeOrigin: true
+      }
+    }
+  },
+  build: {
+    outDir: '../server/public' // Для продакшена билд в папку сервера
+  }
+})
+//script.js
+// save-files-content.js
+import fs from 'fs'
+import path from 'path'
+
+// Получаем аргумент - путь к директории
+const inputPath = process.argv[2];
+
+if (!inputPath) {
+    console.error('Пожалуйста, укажите путь к директории как аргумент.');
+    process.exit(1);
+}
+
+// Определяем, какие расширения файлов нас интересуют
+const allowedExtensions = ['.js', '.css', '.vue'];
+
+// Функция для рекурсивного обхода директории
+function getAllFiles(dirPath, arrayOfFiles) {
+    const files = fs.readdirSync(dirPath);
+
+    files.forEach((file) => {
+        const fullPath = path.join(dirPath, file);
+        const stat = fs.statSync(fullPath);
+
+        if (stat.isDirectory()) {
+            // Пропускаем директорию node_modules
+            if (file === 'node_modules') {
+                return;
+            }
+            getAllFiles(fullPath, arrayOfFiles);
+        } else {
+            const ext = path.extname(fullPath);
+            if (allowedExtensions.includes(ext)) {
+                arrayOfFiles.push(fullPath);
+            }
+        }
+    });
+
+    return arrayOfFiles;
+}
+
+// Собираем все подходящие файлы
+const files = getAllFiles(path.resolve(inputPath), []);
+
+// Открываем поток записи в output_server.txt
+const writeStream = fs.createWriteStream('output_server.txt');
+
+files.forEach((filePath) => {
+    // Записываем путь к файлу
+    writeStream.write(`//${path.relative(inputPath, filePath)}\n`);
+    // Читаем содержимое файла
+    const content = fs.readFileSync(filePath, 'utf8');
+    // Записываем содержимое файла
+    writeStream.write(content);
+    // Добавляем перенос строки между файлами (по желанию)
+    writeStream.write('\n');
+});
+
+// Закрываем поток записи
+writeStream.end();
+
+console.log('Файлы успешно собраны в output_server.txt');
+//server\src\app.js
+import express from 'express';
+import mongoose from 'mongoose';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import sessionMiddleware from './middleware/session.js';
+import corsMiddleware from './middleware/cors.js';
+import errorMiddleware from './middleware/errorHandler.js';
+import { attachUser } from './middleware/auth.js';
+import authRoutes from './routes/authRoutes.js';
+import fileRoutes from "./routes/fileRoutes.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const app = express();
+
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/el-store-db')
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('MongoDB connection error:', err));
+
+app.use(express.json());
+app.use(sessionMiddleware);
+app.use(attachUser);
+app.use(corsMiddleware);
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/files', fileRoutes);
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'public')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  });
+}
+
+app.use(errorMiddleware);
+
+app.use('*', (req, res) => {
+  res.status(404).json({ error: 'Маршрут не найден' });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+//server\src\controllers\authController.js
+import User from '../models/User.js';
+import { hashPassword, comparePassword, validatePassword } from '../utils/password.js';
+
+export const register = async (req, res) => {
+    try {
+        const { login, displayName, email, password } = req.body;
+
+        if (!login || !displayName || !email || !password) {
+            return res.status(400).json({ error: 'Все поля обязательны для заполнения' });
+        }
+
+        const passwordError = validatePassword(password);
+        if (passwordError) {
+            return res.status(400).json({ error: passwordError });
+        }
+
+        const existingUser = await User.findOne({
+            $or: [{ login }, { email }]
+        });
+
+        if (existingUser) {
+            return res.status(400).json({ error: 'Пользователь с таким логином или email уже существует' });
+        }
+
+        // Создание пользователя
+        const passwordHash = await hashPassword(password);
+        const user = new User({
+            login,
+            displayName,
+            email,
+            passwordHash,
+            role: 'ПОКУПАТЕЛЬ'
+        });
+
+        await user.save();
+
+        // Автоматический логин после регистрации
+        req.session.userId = user._id.toString();
+        req.session.userLogin = user.login;
+        req.session.userRole = user.role;
+
+        res.status(201).json({
+            message: 'Пользователь успешно зарегистрирован',
+            user: {
+                id: user._id,
+                login: user.login,
+                displayName: user.displayName,
+                email: user.email,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка регистрации:', error);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+};
+
+export const login = async (req, res) => {
+    try {
+        const { login, password } = req.body;
+
+        if (!login || !password) {
+            return res.status(400).json({ error: 'Логин и пароль обязательны' });
+        }
+
+        // Поиск пользователя
+        const user = await User.findOne({
+            $or: [{ login }, { email: login }]
+        });
+
+        if (!user) {
+            return res.status(401).json({ error: 'Неверный логин или пароль' });
+        }
+
+        // Проверка пароля
+        const isPasswordValid = await comparePassword(password, user.passwordHash);
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: 'Неверный логин или пароль' });
+        }
+
+        // Создание сессии
+        req.session.userId = user._id.toString();
+        req.session.userLogin = user.login;
+        req.session.userRole = user.role;
+
+        res.json({
+            message: 'Успешный вход в систему',
+            user: {
+                id: user._id,
+                login: user.login,
+                displayName: user.displayName,
+                email: user.email,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка входа:', error);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+};
+
+export const logout = (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ error: 'Ошибка при выходе' });
+        }
+        res.clearCookie('sessionId');
+        res.json({ message: 'Успешный выход из системы' });
+    });
+};
+
+export const getCurrentUser = async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(200).json({ user: null });
+        }
+
+        const user = await User.findById(req.session.userId)
+            .select('-passwordHash');
+
+        if (!user) {
+            // Если пользователь не найден, очищаем сессию
+            req.session.destroy();
+            return res.status(200).json({ user: null });
+        }
+
+        res.json({
+            user: {
+                id: user._id,
+                login: user.login,
+                displayName: user.displayName,
+                email: user.email,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка получения пользователя:', error);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+};
+//server\src\controllers\fileController.js
+// src/controllers/fileController.js
+import {
+    ensureProductDir,
+    deleteProductDir,
+    getProductFiles,
+    deleteProductFile,
+    getFileUrl
+} from '../utils/fileUtils.js';
+import Product from '../models/Product.js';
+
+// Загрузка изображений товара
+export const uploadProductImages = async (req, res) => {
+    try {
+        const { productId } = req.params;
+
+        // Проверяем существование товара
+        const product = await Product.findById(productId).populate('categories');
+        if (!product) {
+            return res.status(404).json({ error: 'Товар не найден' });
+        }
+
+        // Создаем директорию если не существует
+        await ensureProductDir(productId);
+
+        const files = await Promise.all(
+            req.files.map(async (file) => {
+                const url = await getFileUrl(productId, file.filename);
+                return {
+                    filename: file.filename,
+                    url: url,
+                    originalName: file.originalname,
+                    size: file.size,
+                    mimetype: file.mimetype
+                };
+            })
+        );
+
+        // Обновляем товар (добавляем изображения)
+        if (!product.images) product.images = [];
+        const newUrls = files.map(f => f.url);
+        product.images.push(...newUrls);
+        await product.save();
+
+        res.status(201).json({
+            message: `Изображения успешно загружены (${files.length})`,
+            files,
+            product: {
+                id: product._id,
+                images: product.images
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка загрузки изображений:', error);
+
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'Размер файла превышает 5MB' });
+        }
+        if (error.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({ error: 'Превышено максимальное количество файлов (10)' });
+        }
+
+        res.status(500).json({ error: 'Ошибка загрузки изображений' });
+    }
+};
+
+// Получение списка изображений товара
+export const getProductImages = async (req, res) => {
+    try {
+        const { productId } = req.params;
+
+        // Проверяем существование товара
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ error: 'Товар не найден' });
+        }
+
+        const files = await getProductFiles(productId);
+        res.json({
+            productId,
+            images: files,
+            total: files.length
+        });
+    } catch (error) {
+        console.error('Ошибка получения изображений:', error);
+        res.status(500).json({ error: 'Ошибка получения изображений' });
+    }
+};
+
+// Удаление конкретного изображения товара
+export const deleteProductImage = async (req, res) => {
+    try {
+        const { productId, filename } = req.params;
+
+        // Проверяем существование товара
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ error: 'Товар не найден' });
+        }
+
+        const success = await deleteProductFile(productId, filename);
+
+        if (!success) {
+            return res.status(404).json({ error: 'Файл не найден' });
+        }
+
+        // Получаем полный URL для удаления из массива изображений
+        const fileUrl = await getFileUrl(productId, filename);
+
+        // Обновляем товар (удаляем ссылку на изображение)
+        product.images = product.images.filter(img => img !== fileUrl);
+        await product.save();
+
+        res.json({
+            message: 'Изображение успешно удалено',
+            product: {
+                id: product._id,
+                images: product.images
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка удаления изображения:', error);
+        res.status(500).json({ error: 'Ошибка удаления изображения' });
+    }
+};
+
+// Удаление всех изображений товара
+export const deleteAllProductImages = async (req, res) => {
+    try {
+        const { productId } = req.params;
+
+        // Проверяем существование товара
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ error: 'Товар не найден' });
+        }
+
+        const success = await deleteProductDir(productId);
+
+        // Очищаем ссылки на изображения в товаре
+        product.images = [];
+        await product.save();
+
+        res.json({
+            message: 'Все изображения товара успешно удалены',
+            product: {
+                id: product._id,
+                images: product.images
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка удаления изображений:', error);
+        res.status(500).json({ error: 'Ошибка удаления изображений' });
+    }
+};
+
+//server\src\middleware\auth.js
+export const requireAuth = (req, res, next) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Требуется авторизация' });
+    }
+    next();
+};
+
+export const requireAdmin = (req, res, next) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Требуется авторизация' });
+    }
+    if (req.session.userRole !== 'АДМИНИСТРАТОР') {
+        return res.status(403).json({ error: 'Недостаточно прав' });
+    }
+    next();
+};
+
+export const attachUser = (req, res, next) => {
+    if (req.session.userId) {
+        req.user = {
+            id: req.session.userId,
+            login: req.session.userLogin,
+            role: req.session.userRole
+        };
+    }
+    next();
+};
+//server\src\middleware\cors.js
+import cors from "cors";
+
+export default cors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+});
+//server\src\middleware\errorHandler.js
+export default (err, req, res, _) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+}
+//server\src\middleware\session.js
+import session from 'express-session';
+import MongoStore from 'connect-mongo';
+
+export default session({
+    name: 'sessionId',
+    secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/el-store-db',
+        ttl: 24 * 60 * 60 // 1 день
+    }),
+    cookie: {
+        maxAge: 24 * 60 * 60 * 1000, // 1 день
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    }
+});
+//server\src\middleware\upload.js
+// src/middleware/upload.js
+import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs/promises';
+import { v4 as uuidv4 } from 'uuid';
+import Product from '../models/Product.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
+
+// Создаем директорию uploads если не существует
+const ensureUploadsDir = async () => {
+    try {
+        await fs.access(UPLOADS_DIR);
+    } catch {
+        await fs.mkdir(UPLOADS_DIR, { recursive: true });
+    }
+};
+
+ensureUploadsDir();
+
+// Конфигурация хранилища
+const storage = multer.diskStorage({
+    destination: async (req, file, cb) => {
+        try {
+            const { productId } = req.params;
+
+            // Находим товар чтобы получить первую категорию
+            const product = await Product.findById(productId).populate('categories');
+            if (!product) {
+                return cb(new Error('Товар не найден'));
+            }
+
+            // Берем первую категорию для создания пути или используем 'uncategorized'
+            const categoryId = product.categories[0]?._id?.toString() || 'uncategorized';
+
+            const dir = path.join(UPLOADS_DIR, categoryId, productId);
+
+            // Создаем директорию если не существует
+            await fs.mkdir(dir, { recursive: true });
+
+            cb(null, dir);
+        } catch (error) {
+            cb(error);
+        }
+    },
+    filename: (req, file, cb) => {
+        const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+        cb(null, uniqueName);
+    }
+});
+
+// Фильтр файлов - только изображения
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Разрешены только файлы изображений'), false);
+    }
+};
+
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB
+        files: 10 // максимум 10 файлов за раз
+    }
+});
+
+// Обработчик ошибок multer
+upload.errorHandler = (err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'Размер файла превышает 5MB' });
+        }
+        if (err.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({ error: 'Превышено максимальное количество файлов (10)' });
+        }
+    }
+    next(err);
+};
+
+export default upload;
+//server\src\models\Cart.js
+import mongoose from 'mongoose';
+import cartSchema from './schemas/cart-schema.js';
+
+export default mongoose.model('Cart', cartSchema);
+//server\src\models\Category.js
+import mongoose from 'mongoose';
+import categorySchema from './schemas/category-schema.js';
+
+export default mongoose.model('Category', categorySchema);
+//server\src\models\Order.js
+import mongoose from 'mongoose';
+import orderSchema from './schemas/order-schema.js';
+
+export default mongoose.model('Order', orderSchema);
+//server\src\models\Product.js
+import mongoose from 'mongoose';
+import productSchema from './schemas/product-schema.js';
+
+export default mongoose.model('Product', productSchema);
+//server\src\models\schemas\cart-schema.js
+import mongoose from "mongoose";
+
+export default new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        unique: true
+    },
+    items: [{
+        productId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Product',
+            required: true
+        },
+        quantity: {
+            type: Number,
+            required: true,
+            min: 1
+        }
+    }]
+});
+//server\src\models\schemas\category-schema.js
+import mongoose from "mongoose";
+
+export default new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+        minlength: 1,
+        maxlength: 120
+    },
+    parentCategory: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+        default: null
+    }
+});
+//server\src\models\schemas\order-schema.js
+import mongoose from "mongoose";
+
+export default new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    items: [{
+        productId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Product',
+            required: true
+        },
+        quantity: {
+            type: Number,
+            required: true,
+            min: 1
+        }
+    }],
+    deliveryInfo: {
+        address: {
+            type: String,
+            required: true
+        },
+        deliveryTime: {
+            type: Date,
+            required: true
+        },
+        courierNotes: {
+            type: String,
+            default: ''
+        }
+    },
+    paymentInfo: {
+        cardNumber: {
+            type: String,
+            required: true,
+            match: [/^\d{16}$/, 'Неверный формат номера карты'],
+        },
+        cvc: {
+            type: String,
+            required: true,
+            match: [/^\d{3}$/, 'CVC должен содержать 3 или 4 цифры'],
+        },
+        expirationDate: {
+            type: String,
+            required: true,
+            match: [/^(0[1-9]|1[0-2])\/?([0-9]{2})$/, 'Неверный формат срока действия (MM/YY)'],
+        },
+    },
+    status: {
+        type: String,
+        enum: ['НОВЫЙ', 'ОПЛАЧЕН', 'ОТМЕНЁН', 'ВЫПОЛНЕН'],
+        default: 'НОВЫЙ'
+    },
+    totalAmount: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+//server\src\models\schemas\product-schema.js
+import mongoose from "mongoose";
+
+export default new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+        minlength: 1,
+        maxlength: 255
+    },
+    description: {
+        type: String,
+        required: true
+    },
+    images: [{
+        type: String
+    }],
+    price: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    categories: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category'
+    }],
+    stock: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0
+    }
+});
+//server\src\models\schemas\user-schema.js
+import mongoose from 'mongoose';
+
+export default new mongoose.Schema({
+    login: {
+        type: String,
+        required: true,
+        unique: true,
+        minlength: 1,
+        maxlength: 60
+    },
+    displayName: {
+        type: String,
+        required: true,
+        minlength: 1,
+        maxlength: 60
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    },
+    passwordHash: {
+        type: String,
+        required: true
+    },
+    role: {
+        type: String,
+        enum: ['ПОКУПАТЕЛЬ', 'АДМИНИСТРАТОР'],
+        default: 'ПОКУПАТЕЛЬ'
+    }
+});
+//server\src\models\User.js
+import mongoose from 'mongoose';
+import userSchema from './schemas/user-schema.js';
+
+export default mongoose.model('User', userSchema);
+//server\src\routes\authRoutes.js
+import express from 'express';
+import {
+    register,
+    login,
+    logout,
+    getCurrentUser
+} from '../controllers/authController.js';
+import { requireAuth } from '../middleware/auth.js';
+
+const router = express.Router();
+
+// Публичные маршруты
+router.post('/register', register);
+router.post('/login', login);
+
+// Защищенные маршруты
+router.post('/logout', requireAuth, logout);
+router.get('/me', getCurrentUser);
+
+export default router;
+//server\src\routes\fileRoutes.js
+// src/routes/fileRoutes.js
+import express from 'express';
+import {
+    uploadProductImages,
+    getProductImages,
+    deleteProductImage,
+    deleteAllProductImages,
+} from '../controllers/fileController.js';
+import { requireAdmin } from '../middleware/auth.js';
+import upload from '../middleware/upload.js';
+
+const router = express.Router();
+
+// Загрузка изображений товара
+router.post('/products/:productId/upload', requireAdmin, upload.array('images', 10), uploadProductImages);
+
+// Получение списка изображений товара
+router.get('/products/:productId', getProductImages);
+
+// Удаление конкретного изображения товара
+router.delete('/products/:productId/:filename', requireAdmin, deleteProductImage);
+
+// Удаление всех изображений товара
+router.delete('/products/:productId', requireAdmin, deleteAllProductImages);
+
+export default router;
+//server\src\utils\fileUtils.js
+// src/utils/fileUtils.js
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import Product from '../models/Product.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
+
+// Получение пути к директории товара
+const getProductDir = async (productId) => {
+    const product = await Product.findById(productId).populate('categories');
+    const categoryId = product?.categories[0]?._id?.toString() || 'uncategorized';
+    return path.join(UPLOADS_DIR, categoryId, productId);
+};
+
+// Получение пути к директории товара по указанной категории
+const getProductDirByCategory = (categoryId, productId) => {
+    const actualCategoryId = categoryId || 'uncategorized';
+    return path.join(UPLOADS_DIR, actualCategoryId, productId);
+};
+
+// Создание директории для товара
+export const ensureProductDir = async (productId) => {
+    const dir = await getProductDir(productId);
+    try {
+        await fs.mkdir(dir, { recursive: true });
+    } catch (error) {
+        if (error.code !== 'EEXIST') throw error;
+    }
+    return dir;
+};
+
+// Удаление директории с изображениями товара
+export const deleteProductDir = async (productId) => {
+    const dir = await getProductDir(productId);
+    try {
+        await fs.rm(dir, { recursive: true, force: true });
+        return true;
+    } catch (error) {
+        console.error(`Ошибка удаления директории ${dir}:`, error);
+        return false;
+    }
+};
+
+// Получение списка файлов товара
+export const getProductFiles = async (productId) => {
+    const dir = await getProductDir(productId);
+    try {
+        const files = await fs.readdir(dir);
+
+        // Получаем категорию для построения правильного URL
+        const product = await Product.findById(productId).populate('categories');
+        const categoryId = product?.categories[0]?._id?.toString() || 'uncategorized';
+
+        return files.map(file => ({
+            filename: file,
+            url: `/uploads/${categoryId}/${productId}/${file}`
+        }));
+    } catch (error) {
+        if (error.code === 'ENOENT') return [];
+        throw error;
+    }
+};
+
+// Удаление конкретного файла товара
+export const deleteProductFile = async (productId, filename) => {
+    const dir = await getProductDir(productId);
+    const filePath = path.join(dir, filename);
+    try {
+        await fs.unlink(filePath);
+        return true;
+    } catch (error) {
+        if (error.code === 'ENOENT') return false;
+        throw error;
+    }
+};
+
+// Получение URL для файла
+export const getFileUrl = async (productId, filename) => {
+    const product = await Product.findById(productId).populate('categories');
+    const categoryId = product?.categories[0]?._id?.toString() || 'uncategorized';
+    return `/uploads/${categoryId}/${productId}/${filename}`;
+};
+
+// Перемещение изображений товара при смене категории
+export const moveProductImages = async (productId, oldCategoryId, newCategoryId) => {
+    try {
+        const oldDir = getProductDirByCategory(oldCategoryId, productId);
+        const newDir = getProductDirByCategory(newCategoryId, productId);
+
+        // Проверяем существует ли старая директория
+        try {
+            await fs.access(oldDir);
+        } catch {
+            console.log(`Старая директория не существует: ${oldDir}`);
+            return false;
+        }
+
+        // Если директории одинаковые - не перемещаем
+        if (oldDir === newDir) {
+            return true;
+        }
+
+        // Создаем новую директорию
+        await fs.mkdir(path.dirname(newDir), { recursive: true });
+
+        // Перемещаем файлы
+        const files = await fs.readdir(oldDir);
+
+        for (const file of files) {
+            const oldPath = path.join(oldDir, file);
+            const newPath = path.join(newDir, file);
+            await fs.rename(oldPath, newPath);
+        }
+
+        // Удаляем старую директорию если пуста
+        try {
+            await fs.rmdir(oldDir);
+        } catch {
+            // Игнорируем ошибку если директория не пуста
+        }
+
+        // Обновляем URL в продукте
+        const product = await Product.findById(productId);
+        if (product && product.images) {
+            const oldBaseUrl = `/uploads/${oldCategoryId || 'uncategorized'}/${productId}/`;
+            const newBaseUrl = `/uploads/${newCategoryId || 'uncategorized'}/${productId}/`;
+
+            product.images = product.images.map(img =>
+                img.replace(oldBaseUrl, newBaseUrl)
+            );
+            await product.save();
+        }
+
+        console.log(`Изображения товара ${productId} перемещены из ${oldDir} в ${newDir}`);
+        return true;
+    } catch (error) {
+        console.error(`Ошибка перемещения изображений товара ${productId}:`, error);
+        return false;
+    }
+};
+
+// Получение текущей категории товара
+export const getProductCategory = async (productId) => {
+    const product = await Product.findById(productId).populate('categories');
+    return product?.categories[0]?._id?.toString() || 'uncategorized';
+};
+//server\src\utils\password.js
+import bcrypt from 'bcrypt';
+
+export const hashPassword = async (password) => {
+    const saltRounds = 12;
+    return await bcrypt.hash(password, saltRounds);
+};
+
+export const comparePassword = async (password, hash) => {
+    return await bcrypt.compare(password, hash);
+};
+
+export const validatePassword = (password) => {
+    if (password.length < 6) {
+        return 'Пароль должен содержать минимум 6 символов';
+    }
+    return null;
+};

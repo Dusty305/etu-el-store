@@ -41,8 +41,8 @@ function getAllFiles(dirPath, arrayOfFiles) {
 // Собираем все подходящие файлы
 const files = getAllFiles(path.resolve(inputPath), []);
 
-// Открываем поток записи в output_server.txt
-const writeStream = fs.createWriteStream('output_server.txt');
+// Открываем поток записи в output.txt
+const writeStream = fs.createWriteStream('output.txt');
 
 files.forEach((filePath) => {
     // Записываем путь к файлу
@@ -58,4 +58,4 @@ files.forEach((filePath) => {
 // Закрываем поток записи
 writeStream.end();
 
-console.log('Файлы успешно собраны в output_server.txt');
+console.log('Файлы успешно собраны в output.txt');

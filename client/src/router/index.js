@@ -34,9 +34,6 @@ const routes = [
             {
                 path: '',
                 redirect: { name: 'Главная страница' }
-            },
-            {
-
             }
         ]
     },
