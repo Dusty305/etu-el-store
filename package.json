@@ -8,7 +8,8 @@
     "dev:server": "cd server && npm run dev",
     "ci": "npm ci && cd client && npm ci && cd ../server && npm ci",
     "build": "cd client && npm run build",
-    "start": "cd server && npm start"
+    "start": "cd server && npm start",
+    "load-db": "cd server && npm run load-db"
   },
   "devDependencies": {
     "concurrently": "^8.2.0"
