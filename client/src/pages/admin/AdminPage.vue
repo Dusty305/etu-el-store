@@ -33,13 +33,6 @@
           >
             📋 Заказы
           </router-link>
-          <router-link
-              to="/admin/profile"
-              class="nav-link"
-              :class="{ active: $route.path.includes('/profile') }"
-          >
-            👤 Профиль
-          </router-link>
         </nav>
       </aside>
 

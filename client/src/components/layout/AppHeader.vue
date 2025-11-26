@@ -28,7 +28,7 @@
           </BaseButton>
         </div>
 
-        <div v-if="!authStore.isAdmin" class="nav-item" @click="handleAuthClick">
+        <div class="nav-item" @click="handleAuthClick">
           <BaseButton variant="primary" class="auth-button">
             {{ authStore.isAuthenticated ? '👤 Профиль' : 'Войти' }}
           </BaseButton>
