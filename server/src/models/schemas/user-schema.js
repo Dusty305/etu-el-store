@@ -29,4 +29,6 @@ export default new mongoose.Schema({
         enum: ['ПОКУПАТЕЛЬ', 'АДМИНИСТРАТОР'],
         default: 'ПОКУПАТЕЛЬ'
     }
+}, {
+    timestamps: true
 });

@@ -67,6 +67,11 @@ const routes = [
             {
                 path: '',
                 redirect: { name: 'Товары' }
+            },
+            {
+                path: 'users',
+                name: 'Пользователи',
+                component: () => import('../pages/admin/UsersSubPage.vue'),
             }
         ]
     }

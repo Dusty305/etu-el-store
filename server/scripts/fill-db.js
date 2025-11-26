@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
-import CategoryModel from '../models/Category.js';
-import ProductModel from '../models/Product.js';
+import CategoryModel from '../src/models/Category.js';
+import ProductModel from '../src/models/Product.js';
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/el-store-db')
     .then(() => console.log('Connected to MongoDB'))

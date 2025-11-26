@@ -8,6 +8,7 @@ import errorMiddleware from './middleware/errorHandler.js';
 import { attachUser } from './middleware/auth.js';
 import authRoutes from './routes/authRoutes.js';
 import fileRoutes from "./routes/fileRoutes.js";
+import adminRoutes from './routes/adminRoutes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -24,6 +25,7 @@ app.use(corsMiddleware);
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 if (process.env.NODE_ENV === 'production') {

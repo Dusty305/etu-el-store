@@ -2,10 +2,22 @@
   <header class="app-header">
     <div class="header-content">
       <div class="logo">
-        <h1>El-store</h1>
+        <router-link to="/main" class="logo-link">
+          <h1>El-store</h1>
+        </router-link>
       </div>
 
       <nav class="navigation">
+        <div v-if="authStore.isAdmin" class="nav-item">
+          <BaseButton
+              @click="goToAdmin"
+              variant="outline"
+              class="admin-button"
+          >
+            🛠️ Админ-панель
+          </BaseButton>
+        </div>
+
         <div class="nav-item" @click="handleCartClick">
           <BaseButton
               :disabled="!authStore.isAuthenticated"
@@ -33,6 +45,10 @@ import BaseButton from '../ui/BaseButton.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
+
+const goToAdmin = () => {
+  router.push('/admin');
+};
 
 const handleCartClick = () => {
   if (authStore.isAuthenticated) {
@@ -87,5 +103,10 @@ const handleAuthClick = () => {
 
 .cart-button, .auth-button {
   min-width: 100px;
+}
+
+.logo-link {
+  text-decoration: none;
+  color: inherit;
 }
 </style>

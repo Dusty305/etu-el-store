@@ -1,6 +1,6 @@
 <template>
   <button
-      :class="['base-button', variant, { disabled }]"
+      :class="['base-button', variant, size, { disabled }]"
       :disabled="disabled"
       @click="$emit('click')"
   >
@@ -14,6 +14,11 @@ defineProps({
     type: String,
     default: 'primary',
     validator: (value) => ['primary', 'secondary', 'outline'].includes(value)
+  },
+  size: {
+    type: String,
+    default: 'medium',
+    validator: (value) => ['small', 'medium', 'large'].includes(value)
   },
   disabled: {
     type: Boolean,
@@ -32,6 +37,21 @@ defineEmits(['click']);
   cursor: pointer;
   font-size: 1rem;
   transition: all 0.2s;
+}
+
+.small {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.medium {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+}
+
+.large {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.125rem;
 }
 
 .primary {
