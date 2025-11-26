@@ -67,7 +67,7 @@
                 @click="removeAdmin(user._id)"
                 variant="outline"
                 size="small"
-                :disabled="updatingUser === user._id"
+                :disabled="updatingUser === user._id || userInfo.id === user._id"
             >
               {{ updatingUser === user._id ? '...' : 'Убрать админа' }}
             </BaseButton>
@@ -104,10 +104,13 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useAdminUsersStore } from '../../stores/adminUsers.js';
+import { useAuthStore } from "../../stores/auth.js";
 import BaseInput from '../../components/ui/BaseInput.vue';
 import BaseButton from '../../components/ui/BaseButton.vue';
+import {storeToRefs} from "pinia";
 
 const adminUsersStore = useAdminUsersStore();
+const { userInfo } = storeToRefs(useAuthStore());
 const search = ref('');
 const updatingUser = ref(null);
 let searchTimeout = null;
@@ -150,7 +153,7 @@ const removeAdmin = async (userId) => {
 };
 
 const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('ru-RU');
+  return dateString ? new Date(dateString).toLocaleDateString('ru-RU') : '-';
 };
 
 onMounted(() => {
