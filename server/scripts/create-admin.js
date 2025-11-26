@@ -16,7 +16,6 @@ async function createAdmin() {
         console.log('Подключение к MongoDB...');
 
         await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/el-store-db');
-        console.log('✅ Успешное подключение к MongoDB');
 
         const existingAdmin = await User.findOne({
             $or: [

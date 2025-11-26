@@ -2,7 +2,7 @@
   <div class="categories-page">
     <div class="page-header">
       <h2>Управление категориями</h2>
-      <p>Создавайте и редактируйте иерархию категорий товаров</p>
+      <p>Создание и редактирование иерархии категорий товаров</p>
     </div>
 
     <div class="categories-layout">

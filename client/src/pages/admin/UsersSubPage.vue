@@ -79,8 +79,8 @@
 
     <div v-if="adminUsersStore.pagination.totalPages > 1" class="pagination">
       <BaseButton
-          @click="changePage(adminUsersStore.pagination.currentPage - 1)"
-          :disabled="adminUsersStore.pagination.currentPage === 1"
+          @click="changePage(Number.parseInt(adminUsersStore.pagination.currentPage) - 1)"
+          :disabled="Number.parseInt(adminUsersStore.pagination.currentPage) === 1"
           variant="outline"
       >
         Назад
@@ -91,8 +91,8 @@
       </span>
 
       <BaseButton
-          @click="changePage(adminUsersStore.pagination.currentPage + 1)"
-          :disabled="adminUsersStore.pagination.currentPage === adminUsersStore.pagination.totalPages"
+          @click="changePage(Number.parseInt(adminUsersStore.pagination.currentPage) + 1)"
+          :disabled="Number.parseInt(adminUsersStore.pagination.currentPage) === adminUsersStore.pagination.totalPages"
           variant="outline"
       >
         Вперед

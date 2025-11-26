@@ -13,7 +13,8 @@ import adminRoutes from './routes/adminRoutes.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/el-store-db')
+console.log('Connecting to mongoDB')
+await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/el-store-db?directConnection=true')
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('MongoDB connection error:', err));
 
