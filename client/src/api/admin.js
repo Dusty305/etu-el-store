@@ -24,3 +24,44 @@ export const adminAPI = {
         return handleResponse(response);
     }
 };
+
+export const adminCategoriesAPI = {
+    async createCategory(categoryData) {
+        const response = await fetch(`${SERVER_ADDRESS}/${API_BASE}/categories`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(categoryData),
+            credentials: 'include'
+        });
+        return handleResponse(response);
+    },
+
+    async updateCategory(categoryId, categoryData) {
+        const response = await fetch(`${SERVER_ADDRESS}/${API_BASE}/categories/${categoryId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(categoryData),
+            credentials: 'include'
+        });
+        return handleResponse(response);
+    },
+
+    async deleteCategory(categoryId) {
+        const response = await fetch(`${SERVER_ADDRESS}/${API_BASE}/categories/${categoryId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        return handleResponse(response);
+    },
+
+    async getCategoryTree() {
+        const response = await fetch(`${SERVER_ADDRESS}/${API_BASE}/categories/tree`, {
+            credentials: 'include'
+        });
+        return handleResponse(response);
+    }
+};

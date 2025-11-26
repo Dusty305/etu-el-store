@@ -1,4 +1,3 @@
-// src/middleware/upload.js
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -10,15 +9,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
 
 // Создаем директорию uploads если не существует
-const ensureUploadsDir = async () => {
-    try {
-        await fs.access(UPLOADS_DIR);
-    } catch {
-        await fs.mkdir(UPLOADS_DIR, { recursive: true });
-    }
-};
-
-ensureUploadsDir();
+try {
+    await fs.access(UPLOADS_DIR);
+} catch {
+    await fs.mkdir(UPLOADS_DIR, { recursive: true });
+}
 
 // Конфигурация хранилища
 const storage = multer.diskStorage({

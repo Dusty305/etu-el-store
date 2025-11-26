@@ -1,4 +1,3 @@
-// src/controllers/fileController.js
 import {
     ensureProductDir,
     deleteProductDir,
@@ -8,7 +7,6 @@ import {
 } from '../utils/fileUtils.js';
 import Product from '../models/Product.js';
 
-// Загрузка изображений товара
 export const uploadProductImages = async (req, res) => {
     try {
         const { productId } = req.params;
@@ -63,7 +61,6 @@ export const uploadProductImages = async (req, res) => {
     }
 };
 
-// Получение списка изображений товара
 export const getProductImages = async (req, res) => {
     try {
         const { productId } = req.params;
@@ -86,7 +83,6 @@ export const getProductImages = async (req, res) => {
     }
 };
 
-// Удаление конкретного изображения товара
 export const deleteProductImage = async (req, res) => {
     try {
         const { productId, filename } = req.params;
@@ -123,7 +119,6 @@ export const deleteProductImage = async (req, res) => {
     }
 };
 
-// Удаление всех изображений товара
 export const deleteAllProductImages = async (req, res) => {
     try {
         const { productId } = req.params;
