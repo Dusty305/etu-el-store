@@ -104,22 +104,22 @@ export const deleteCategory = async (req, res) => {
             { parentCategory: parentCategoryId }
         );
 
-        // 2. Обновляем товары (заменяем удаляемую категорию на родительскую)
-        if (parentCategoryId) {
-            // Для товаров, которые имеют удаляемую категорию
-            await Product.updateMany(
-                { categories: categoryId },
-                {
-                    $pull: { categories: categoryId },
-                    $addToSet: { categories: parentCategoryId }
-                }
+        // 2. Обновляем товары - только удаляем категорию из массива
+        const productsToUpdate = await Product.find({ categories: categoryId });
+
+        for (const product of productsToUpdate) {
+            // Удаляем удаляемую категорию из массива
+            product.categories = product.categories.filter(
+                catId => catId.toString() !== categoryId
             );
-        } else {
-            // Если родительской категории нет, просто удаляем категорию из товаров
-            await Product.updateMany(
-                { categories: categoryId },
-                { $pull: { categories: categoryId } }
-            );
+
+            // Если у товара не осталось категорий И есть родительская категория,
+            // добавляем родительскую категорию
+            if (product.categories.length === 0 && parentCategoryId) {
+                product.categories.push(parentCategoryId);
+            }
+
+            await product.save();
         }
 
         // 3. Удаляем саму категорию

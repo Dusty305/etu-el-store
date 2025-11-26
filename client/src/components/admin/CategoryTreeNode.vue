@@ -1,4 +1,3 @@
-<!-- src/components/admin/CategoryTreeNode.vue -->
 <template>
   <div class="category-tree-node" :style="{ marginLeft: `${level * 20}px` }">
     <div class="category-item" :class="{ 'editing': isEditing }">
@@ -77,8 +76,8 @@
           :category="child"
           :level="level + 1"
           :allCategories="allCategories"
-          @category-updated="$emit('category-updated')"
-          @category-deleted="$emit('category-deleted')"
+          @category-updated="(...args) => $emit('category-updated', ...args)"
+          @category-deleted="(...args) => $emit('category-deleted', ...args)"
       />
     </div>
   </div>

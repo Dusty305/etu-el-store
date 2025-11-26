@@ -1,4 +1,3 @@
-<!-- src/pages/admin/CategoriesSubPage.vue -->
 <template>
   <div class="categories-page">
     <div class="page-header">
