@@ -16,7 +16,7 @@ const routes = [
             {
                 path: 'main',
                 name: 'Главная страница',
-                component: () => import('../pages/user/ProductsSubPage.vue'),
+                component: () => import('../pages/shared/MainSubPage.vue'),
                 meta: { requiresAuth: false }
             },
             {
@@ -30,6 +30,12 @@ const routes = [
                 name: 'Корзина',
                 component: () => import('../pages/user/CartSubPage.vue'),
                 meta: { requiresAuth: true }
+            },
+            {
+                path: 'product/:productId',
+                name: 'Продукты',
+                component: () => import('../pages/shared/ProductSubPage.vue'),
+                meta: { requiresAuth: false }
             },
             {
                 path: '',

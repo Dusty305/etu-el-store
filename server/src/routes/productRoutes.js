@@ -1,13 +1,14 @@
 import express from 'express';
 import {
-    products
+    products,
+    oneProduct,
+    search
 } from '../controllers/productController.js';
 
 const router = express.Router();
 
-// Публичные маршруты
 router.get('/all', products)
-
-// Защищенные маршруты
+router.get('/search', search)
+router.get('/id/:productId', oneProduct)
 
 export default router;

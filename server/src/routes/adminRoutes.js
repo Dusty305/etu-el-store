@@ -19,6 +19,9 @@ router.patch('/users/:userId/role', requireAdmin, updateUserRole);
 router.post('/categories', requireAdmin, createCategory);
 router.put('/categories/:categoryId', requireAdmin, updateCategory);
 router.delete('/categories/:categoryId', requireAdmin, deleteCategory);
-router.get('/categories/tree', requireAdmin, getCategoryTree);
+
+// HACK мне кажется здесь не нужен администратор, чтобы категории смотреть, потому что переписывать
+// код, чтобы у нас были разные API для пользователя и для админа, в данном случае слишком тупо
+router.get('/categories/tree', /*requireAdmin,*/ getCategoryTree);
 
 export default router;
