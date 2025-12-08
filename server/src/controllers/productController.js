@@ -14,7 +14,7 @@ export const products = async (req, res) => {
 
 export const oneProduct = async (req, res) => {
     try {
-        const product = await ProductModel.findOne({ _id: req.params.productId });
+        const product = await ProductModel.findById(req.params.productId);
         if (!product) {
             throw new Error('No such product!')
         }
