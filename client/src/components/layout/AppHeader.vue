@@ -77,7 +77,7 @@ const handleAuthClick = () => {
 }
 
 .header-content {
-  max-width: 1200px;
+  max-width: 80%;
   margin: 0 auto;
   padding: 0 2rem;
   display: flex;

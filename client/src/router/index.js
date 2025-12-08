@@ -16,8 +16,8 @@ const routes = [
             {
                 path: 'main',
                 name: 'Главная страница',
-                component: () => import('../pages/user/ProductsSubPage.vue'),
-                meta: { requiresAuth: true }
+                component: () => import('../pages/shared/MainSubPage.vue'),
+                meta: { requiresAuth: false }
             },
             {
                 path: 'profile',
@@ -27,9 +27,15 @@ const routes = [
             },
             {
                 path: 'cart',
-                name: 'Cart',
+                name: 'Корзина',
                 component: () => import('../pages/user/CartSubPage.vue'),
                 meta: { requiresAuth: true }
+            },
+            {
+                path: 'product/:productId',
+                name: 'Продукты',
+                component: () => import('../pages/shared/ProductSubPage.vue'),
+                meta: { requiresAuth: false }
             },
             {
                 path: '',
@@ -74,6 +80,11 @@ const routes = [
                 component: () => import('../pages/admin/UsersSubPage.vue'),
             }
         ]
+    },
+    {
+        // Все остальные маршруты перенаправляем на главную страницу    
+        path: '/:pathMatch(.*)*',
+        redirect: { name: 'Главная страница' }
     }
 ];
 
