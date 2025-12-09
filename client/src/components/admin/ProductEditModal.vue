@@ -59,14 +59,14 @@
             <label for="category">Категория</label>
             <select
               id="category"
-              v-model="formData.category"
+              v-model="formData.categories"
               class="form-select"
               multiple
             >
               <option
                 v-for="cat in flatCategories"
                 :key="cat._id"
-                :value="cat.name"
+                :value="cat._id"
               >
               {{ cat.name }}
               </option>
@@ -150,6 +150,8 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'save'])
 
+const selectedCategories = ref([])
+
 const isSubmitting = ref(false)
 const formData = reactive({
   name: '',
@@ -204,11 +206,7 @@ const handleImageUpload = (event) => {
 
   files.forEach(file => {
     const url = URL.createObjectURL(file)
-    formData.images.push({
-      url,
-      file,
-      name: file.name
-    })
+    formData.images.push({ url, file })
   })
   event.target.value = '' // Сброс input
 }

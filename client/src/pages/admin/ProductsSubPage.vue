@@ -2,7 +2,7 @@
   <div class="products-page">
     <div class="page-header">
     <h2>Управление товарами</h2>
-    <p>Всего товаров: {{ adminProductStore.products.length }}</p>
+    <p>Всего товаров: {{ adminProductsStore.products.length }}</p>
     </div>
 
     <div class="controls">
@@ -14,20 +14,20 @@
         />
       </div>
       <div>
-        <BaseButton class="add-action" @click="openEditModal()" variant="outline">Добавить новый товар</BaseButton>
+        <BaseButton @click="openEditModal()" variant="outline">Добавить новый товар</BaseButton>
       </div>
     </div>
 
-    <div v-if="adminProductStore.isLoading" class="loading">
+    <div v-if="adminProductsStore.isLoading" class="loading">
       Загрузка товаров...
     </div>
 
-    <div v-else-if="adminProductStore.error" class="error">
-      {{ adminProductStore.error }}
+    <div v-else-if="adminProductsStore.error" class="error">
+      {{ adminProductsStore.error }}
       <BaseButton @click="loadProducts" variant="outline">Повторить</BaseButton>
     </div>
 
-    <div v-else-if="adminProductStore.products.length === 0" class="empty">
+    <div v-else-if="adminProductsStore.products.length === 0" class="empty">
       Товары не найдены
     </div>
 
@@ -41,7 +41,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="product in adminProductStore.products" :key="product._id" class="product-row">
+          <tr v-for="product in adminProductsStore.products" :key="product._id" class="product-row">
             <td>{{ product._id }}</td>
             <td>{{ product.name }}</td>
             <td class="actions">
@@ -103,7 +103,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useProductStore } from '../../stores/product.js';
+import { useAdminProductsStore } from '../../stores/adminProducts.js';
 import BaseInput from '../../components/ui/BaseInput.vue';
 import BaseButton from '../../components/ui/BaseButton.vue';
 import ProductEditModal from '../../components/admin/ProductEditModal.vue'
@@ -112,7 +112,7 @@ import { useAdminCategoriesStore } from '../../stores/adminCategories.js'
 const adminCategories = useAdminCategoriesStore()
 
 const search = ref('');
-const adminProductStore = useProductStore()
+const adminProductsStore = useAdminProductsStore()
 const showEditModal = ref(false)
 const selectedProduct = ref(null)
 let searchTimeout = null;
@@ -130,7 +130,7 @@ const handleSearch = () => {
 
 const loadProducts = (page = 1) => {
   //adminProductStore.loadProducts(page, 10, search.value);
-  adminProductStore.getAllProducts()
+  adminProductsStore.loadProducts()
 };
 
 const openEditModal = (product = null) => {
@@ -145,9 +145,20 @@ const closeEditModal = () => {
 
 const handleSaveProduct = async (productData) => {
   if (selectedProduct.value) {
-    await adminProductStore.updateProduct(selectedProduct.value._id, productData)
+    await adminProductsStore.updateProduct(selectedProduct.value._id, productData)
   } else {
-    await adminProductStore.createProduct(productData)
+    await adminProductsStore.createProduct(productData)
+  }
+}
+
+const editProduct = async (productId) => {
+  const response = await adminProductsStore.loadOneProduct(productId)
+  openEditModal(response.product)
+}
+
+const removeProduct = async (productId) => {
+  if (confirm("Подтвердите удаление продукта")) {
+    await adminProductsStore.deleteProduct(productId)
   }
 }
 
@@ -176,13 +187,6 @@ onMounted(() => {
 
 .search-box {
   max-width: 400px;
-}
-
-.add-action {
-  background: #45ec45;
-  border-color: #3ec43e;
-  color: white;
-  font-weight: bold;
 }
 
 .edit-action {

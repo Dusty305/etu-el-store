@@ -1,7 +1,9 @@
 // src/api/admin.js
+import { productAPI } from "./product.js";
 import { SERVER_ADDRESS, handleResponse } from "./utils.js";
 
 export const API_BASE = 'api/admin';
+export const API_BASE_FILES = 'api/files';
 
 export const adminAPI = {
     async getUsers(page = 1, limit = 10, search = '') {
@@ -65,3 +67,70 @@ export const adminCategoriesAPI = {
         return handleResponse(response);
     }
 };
+
+export const adminProductsAPI = {
+    async getProducts() {
+        return productAPI.getAllProducts()
+    },
+
+    async getOneProduct(productId) {
+        return productAPI.getOneProduct(productId)
+    },
+
+    async createProduct(productData) {
+        const response = await fetch(`${SERVER_ADDRESS}/${API_BASE}/products`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(productData),
+            credentials: 'include'
+        });
+
+        return handleResponse(response);
+    },
+
+    async uploadImages(productId, images) {
+        const formData = new FormData();
+
+        images.forEach(img => {
+            formData.append('images', img.file);
+        });
+        
+        const response = await fetch(`${SERVER_ADDRESS}/${API_BASE_FILES}/products/${productId}/upload`, {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+        })
+
+        return handleResponse(response);
+    },
+
+    async updateProduct(productId, productData) {
+        const response = await fetch(`${SERVER_ADDRESS}/${API_BASE}/products/${productId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(productData),
+            credentials: 'include'
+        });
+        return handleResponse(response);
+    },
+
+    async deleteProduct(productId) {
+        const response = await fetch(`${SERVER_ADDRESS}/${API_BASE}/products/${productId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        return handleResponse(response);
+    },
+
+    async deleteImages(productId) {
+        const response = await fetch(`${SERVER_ADDRESS}/${API_BASE_FILES}/products/${productId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        return handleResponse(response);
+    }
+}

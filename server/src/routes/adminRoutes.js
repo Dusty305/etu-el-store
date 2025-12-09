@@ -7,6 +7,13 @@ import {
     deleteCategory,
     getCategoryTree
 } from '../controllers/adminCategoryController.js';
+
+import {
+    createProduct,
+    updateProduct,
+    deleteProduct
+} from '../controllers/adminProductController.js'
+
 import { requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -23,5 +30,10 @@ router.delete('/categories/:categoryId', requireAdmin, deleteCategory);
 // HACK мне кажется здесь не нужен администратор, чтобы категории смотреть, потому что переписывать
 // код, чтобы у нас были разные API для пользователя и для админа, в данном случае слишком тупо
 router.get('/categories/tree', /*requireAdmin,*/ getCategoryTree);
+
+
+router.post('/products', createProduct)
+router.put('/products/:productId', updateProduct)
+router.delete('/products/:productId', deleteProduct)
 
 export default router;
