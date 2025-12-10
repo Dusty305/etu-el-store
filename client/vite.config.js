@@ -4,16 +4,15 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   plugins: [vue()],
   server: {
-    port: 3000, // Клиент работает на 3000 порту
+    port: 3000,
     proxy: {
-      // Проксирование API запросов на бэкенд-сервер
       '/api': {
-        target: 'http://localhost:5000', // Ваш Express сервер
+        target: 'http://localhost:5000',
         changeOrigin: true
       }
     }
   },
   build: {
-    outDir: '../server/public' // Для продакшена билд в папку сервера
+    outDir: '../server/public' // Для продакшена
   }
 })

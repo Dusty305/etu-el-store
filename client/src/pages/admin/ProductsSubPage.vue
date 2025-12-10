@@ -68,7 +68,7 @@
     </div>
 
     <ProductEditModal
-      v-if="showEditModal"
+      v-show="showEditModal"
       :is-visible="showEditModal"
       :product="selectedProduct"
       :flatCategories="flatCategories"
