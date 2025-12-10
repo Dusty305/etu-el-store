@@ -84,6 +84,11 @@ const routes = [
                 component: () => import('../pages/admin/OrdersSubPage.vue'),
             },
             {
+                path: 'orders/:orderId',
+                name: 'Детали заказа',
+                component: () => import('../pages/admin/OrderDetailsSubPage.vue'),
+            },
+            {
                 path: 'categories',
                 name: 'Категории',
                 component: () => import('../pages/admin/CategoriesSubPage.vue'),

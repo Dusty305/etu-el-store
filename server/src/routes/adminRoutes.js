@@ -1,4 +1,3 @@
-// src/routes/adminRoutes.js
 import express from 'express';
 import { getUsers, updateUserRole } from '../controllers/adminController.js';
 import {
@@ -7,6 +6,12 @@ import {
     deleteCategory,
     getCategoryTree
 } from '../controllers/adminCategoryController.js';
+import {
+    getAllOrders,
+    getOrderDetails,
+    updateOrderStatus,
+    markOrderAsDelivered
+} from '../controllers/adminOrderController.js';
 import { requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -19,9 +24,12 @@ router.patch('/users/:userId/role', requireAdmin, updateUserRole);
 router.post('/categories', requireAdmin, createCategory);
 router.put('/categories/:categoryId', requireAdmin, updateCategory);
 router.delete('/categories/:categoryId', requireAdmin, deleteCategory);
-
-// HACK мне кажется здесь не нужен администратор, чтобы категории смотреть, потому что переписывать
-// код, чтобы у нас были разные API для пользователя и для админа, в данном случае слишком тупо
 router.get('/categories/tree', /*requireAdmin,*/ getCategoryTree);
+
+// Управление заказами
+router.get('/orders', requireAdmin, getAllOrders);
+router.get('/orders/:orderId', requireAdmin, getOrderDetails);
+router.patch('/orders/:orderId/status', requireAdmin, updateOrderStatus);
+router.post('/orders/:orderId/deliver', requireAdmin, markOrderAsDelivered);
 
 export default router;
