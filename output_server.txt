@@ -1,0 +1,2473 @@
+//scripts\create-admin.js
+import mongoose from 'mongoose';
+import User from '../src/models/User.js';
+import { hashPassword } from '../src/utils/password.js';
+
+
+const ADMIN_DATA = {
+    login: 'admin',
+    displayName: 'Администратор',
+    email: 'admin@el-store.ru',
+    password: 'admin123',
+    role: 'АДМИНИСТРАТОР'
+};
+
+async function createAdmin() {
+    try {
+        console.log('Подключение к MongoDB...');
+
+        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/el-store-db');
+
+        const existingAdmin = await User.findOne({
+            $or: [
+                { login: ADMIN_DATA.login },
+                { email: ADMIN_DATA.email },
+                { role: 'АДМИНИСТРАТОР' }
+            ]
+        });
+
+        if (existingAdmin) {
+            console.log('Администратор уже существует:');
+            return;
+        }
+
+        const passwordHash = await hashPassword(ADMIN_DATA.password);
+
+        // Создаем пользователя администратора
+        const adminUser = new User({
+            login: ADMIN_DATA.login,
+            displayName: ADMIN_DATA.displayName,
+            email: ADMIN_DATA.email,
+            passwordHash: passwordHash,
+            role: ADMIN_DATA.role
+        });
+
+        await adminUser.save();
+
+    } catch (error) {
+        console.error('Ошибка при создании администратора:', error);
+    } finally {
+        await mongoose.disconnect();
+        console.log('Отключение от MongoDB');
+        process.exit(0);
+    }
+}
+
+await createAdmin();
+//scripts\create40Lols.js
+import mongoose from 'mongoose';
+import User from '../src/models/User.js';
+import { hashPassword } from '../src/utils/password.js';
+
+async function createUsers() {
+    try {
+        console.log('Подключение к MongoDB...');
+
+        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/el-store-db');
+        console.log('Успешное подключение к MongoDB');
+
+        // Проверяем, существуют ли уже такие пользователи
+        const existingUsers = await User.find({
+            login: { $regex: /^lol\d+$/ }
+        });
+
+        if (existingUsers.length > 0) {
+            console.log(`Найдено ${existingUsers.length} существующих пользователей с логинами lol*. Удаление...`);
+            await User.deleteMany({ login: { $regex: /^lol\d+$/ } });
+        }
+
+        console.log('Создание 40 пользователей...');
+
+        const users = [];
+
+        for (let i = 1; i <= 40; i++) {
+            const userData = {
+                login: `lol${i}`,
+                displayName: `Покупатель ${i}`,
+                email: `user${i}@el-store.ru`,
+                password: `lol${i}`,
+                role: 'ПОКУПАТЕЛЬ'
+            };
+
+            const passwordHash = await hashPassword(userData.password);
+
+            users.push({
+                login: userData.login,
+                displayName: userData.displayName,
+                email: userData.email,
+                passwordHash: passwordHash,
+                role: userData.role
+            });
+        }
+
+        // Создаем всех пользователей одним запросом
+        await User.insertMany(users);
+
+        console.log('Успешно создано 40 пользователей:');
+
+    } catch (error) {
+        console.error('Ошибка при создании пользователей:', error);
+    } finally {
+        await mongoose.disconnect();
+        console.log('Отключение от MongoDB');
+        process.exit(0);
+    }
+}
+
+await createUsers();
+//scripts\fill-db.js
+import mongoose from 'mongoose';
+
+import CategoryModel from '../src/models/Category.js';
+import ProductModel from '../src/models/Product.js';
+
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/el-store-db')
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('MongoDB connection error:', err));
+
+// Удаляем имеющиеся данные
+await CategoryModel.deleteMany({});
+await ProductModel.deleteMany({});
+
+async function CreateCategories() {
+    try {
+        console.log('Начинаем заполнять данными о категориях...')
+
+        // Создаем корневые категории
+        const computers = await CategoryModel.create({ name: "Компьютеры и ноутбуки" });
+        const mobile = await CategoryModel.create({ name: "Смартфоны и гаджеты" });
+        const homeTech = await CategoryModel.create({ name: "Техника для дома" });
+        const tv = await CategoryModel.create({ name: "Телевизоры и аудио" });
+
+        // Создаем подкатегории
+        await CategoryModel.create([
+            // Подкатегории для компьютеров
+            {
+                name: "Ноутбуки",
+                parentCategory: computers._id
+            },
+            {
+                name: "Стационарные компьютеры",
+                parentCategory: computers._id
+            },
+            {
+                name: "Комплектующие",
+                parentCategory: computers._id
+            },
+            {
+                name: "Периферия",
+                parentCategory: computers._id
+            },
+            
+            // Подкатегории для мобильных устройств
+            {
+                name: "Смартфоны",
+                parentCategory: mobile._id
+            },
+            {
+                name: "Планшеты",
+                parentCategory: mobile._id
+            },
+            {
+                name: "Умные часы и фитнес-браслеты",
+                parentCategory: mobile._id
+            },
+            {
+                name: "Аксессуары",
+                parentCategory: mobile._id
+            },
+            
+            // Подкатегории для техники для дома
+            {
+                name: "Кухонная техника",
+                parentCategory: homeTech._id
+            },
+            {
+                name: "Техника для уборки",
+                parentCategory: homeTech._id
+            },
+            {
+                name: "Другая техника",
+                parentCategory: homeTech._id
+            },
+            
+            // Подкатегории для TV и аудио
+            {
+                name: "Телевизоры",
+                parentCategory: tv._id
+            },
+            {
+                name: "Аудиостанции",
+                parentCategory: tv._id
+            }
+        ]);
+        console.log('БД успешно заполнена даными о категориях!')
+    } catch (error) {
+        console.error('Ошибка при заполнении базы:', error);
+    }
+}
+
+async function CreateProducts() {
+    try {
+        console.log('Начинаем заполнять данными о товарах...')
+        
+        // Находим ID категорий
+        const computers = await CategoryModel.findOne({ name: "Компьютеры и ноутбуки" });
+        const mobile = await CategoryModel.findOne({ name: "Смартфоны и гаджеты" });
+        const homeTech = await CategoryModel.findOne({ name: "Техника для дома" });
+        const tv = await CategoryModel.findOne({ name: "Телевизоры и аудио" });
+        
+        const laptops = await CategoryModel.findOne({ name: "Ноутбуки" });
+        const pcs = await CategoryModel.findOne({ name: "Стационарные компьютеры" });
+        const components = await CategoryModel.findOne({ name: "Комплектующие" });
+        const peripherals = await CategoryModel.findOne({ name: "Периферия" });
+        
+        const smartphones = await CategoryModel.findOne({ name: "Смартфоны" });
+        const tablets = await CategoryModel.findOne({ name: "Планшеты" });
+        const smartwatches = await CategoryModel.findOne({ name: "Умные часы и фитнес-браслеты" });
+        const mobileAccessories = await CategoryModel.findOne({ name: "Аксессуары" });
+        
+        const houseAppliances = await CategoryModel.findOne({ name: "Кухонная техника" });
+        const cleaningTech = await CategoryModel.findOne({ name: "Техника для уборки" });
+        const otherTech = await CategoryModel.findOne({ name: "Другая техника" });
+        
+        const televisions = await CategoryModel.findOne({ name: "Телевизоры" });
+        const audioSystems = await CategoryModel.findOne({ name: "Аудиостанции" });
+
+        // Создаем товары
+        const products = await ProductModel.create([
+            // ========== НОУТБУКИ ==========
+            {
+                name: "Apple MacBook Air 13 M2",
+                description: "Ультратонкий ноутбук с чипом Apple M2, 13.6-дюймовым дисплеем Retina и до 18 часов автономной работы. Идеален для работы и творчества.",
+                images: [],
+                price: 119990,
+                categories: [computers._id, laptops._id],
+                stock: 15
+            },
+            {
+                name: "ASUS ROG Strix G15",
+                description: "Игровой ноутбук с процессором Intel Core i7, видеокартой NVIDIA RTX 4060 и 16 ГБ оперативной памяти. Высокая производительность для игр и монтажа видео.",
+                images: [],
+                price: 149990,
+                categories: [computers._id, laptops._id],
+                stock: 8
+            },
+            {
+                name: "Lenovo ThinkPad X1 Carbon",
+                description: "Бизнес-ноутбук с процессором Intel Core i5, 14-дюймовым дисплеем и премиальной сборкой. Надежность и производительность для деловых задач.",
+                images: [],
+                price: 135000,
+                categories: [computers._id, laptops._id],
+                stock: 12
+            },
+
+            // ========== СТАЦИОНАРНЫЕ КОМПЬЮТЕРЫ ==========
+            {
+                name: "HP Pavilion Gaming Desktop",
+                description: "Игровой компьютер с процессором AMD Ryzen 5, видеокартой NVIDIA GTX 1660 Super и 512 ГБ SSD. Отличное решение для игр и работы.",
+                images: [],
+                price: 89990,
+                categories: [computers._id, pcs._id],
+                stock: 6
+            },
+            {
+                name: "Apple iMac 24\" M3",
+                description: "Моноблок с процессором Apple M3, 24-дюймовым 4.5K дисплеем и стильным дизайном. Идеален для творческих профессионалов.",
+                images: [],
+                price: 199990,
+                categories: [computers._id, pcs._id],
+                stock: 4
+            },
+
+            // ========== КОМПЛЕКТУЮЩИЕ ==========
+            {
+                name: "NVIDIA GeForce RTX 4070 Ti",
+                description: "Игровая видеокарта с 12 ГБ GDDR6X памяти, поддержкой трассировки лучей и DLSS 3. Максимальная производительность в играх 4K.",
+                images: [],
+                price: 89990,
+                categories: [computers._id, components._id],
+                stock: 10
+            },
+            {
+                name: "AMD Ryzen 7 7800X3D",
+                description: "Процессор с технологией 3D V-Cache, 8 ядер и 16 потоков. Оптимизирован для игр с высокой частотой кадров.",
+                images: [],
+                price: 45990,
+                categories: [computers._id, components._id],
+                stock: 20
+            },
+            {
+                name: "Kingston Fury 32GB DDR5",
+                description: "Оперативная память DDR5 5600MHz для игровых ПК и рабочих станций. Низкие тайминги и высокая пропускная способность.",
+                images: [],
+                price: 12990,
+                categories: [computers._id, components._id],
+                stock: 25
+            },
+
+            // ========== СМАРТФОНЫ ==========
+            {
+                name: "iPhone 15 Pro Max",
+                description: "Флагманский смартфон Apple с титановым корпусом, процессором A17 Pro и продвинутой камерой 48 МП. Лучшая производительность на рынке.",
+                images: [],
+                price: 129990,
+                categories: [mobile._id, smartphones._id],
+                stock: 18
+            },
+            {
+                name: "Samsung Galaxy S24 Ultra",
+                description: "Премиальный смартфон с S-Pen, камерой 200 МП и процессором Snapdragon 8 Gen 3. Искусственный интеллект для повышения продуктивности.",
+                images: [],
+                price: 109990,
+                categories: [mobile._id, smartphones._id],
+                stock: 14
+            },
+            {
+                name: "Xiaomi Redmi Note 13 Pro",
+                description: "Смартфон среднего класса с AMOLED дисплеем 120 Гц, камерой 200 МП и быстрой зарядкой 67 Вт. Отличное соотношение цены и качества.",
+                images: [],
+                price: 34990,
+                categories: [mobile._id, smartphones._id],
+                stock: 30
+            },
+
+            // ========== ПЛАНШЕТЫ ==========
+            {
+                name: "iPad Air 5 10.9\"",
+                description: "Мощный планшет с чипом M1, поддержкой Apple Pencil и Magic Keyboard. Универсальное устройство для работы и творчества.",
+                images: [],
+                price: 69990,
+                categories: [mobile._id, tablets._id],
+                stock: 9
+            },
+            {
+                name: "Samsung Galaxy Tab S9",
+                description: "Флагманский планшет Android с AMOLED дисплеем, S-Pen в комплекте и защитой от воды. Идеален для заметок и мультимедиа.",
+                images: [],
+                price: 89990,
+                categories: [mobile._id, tablets._id],
+                stock: 7
+            },
+
+            // ========== УМНЫЕ ЧАСЫ И ФИТНЕС-БРАСЛЕТЫ ==========
+            {
+                name: "Apple Watch Series 9 45mm",
+                description: "Умные часы с Always-On дисплеем, функцией измерения ЭКГ и трекингом сна. Интеграция с экосистемой Apple.",
+                images: [],
+                price: 45990,
+                categories: [mobile._id, smartwatches._id],
+                stock: 22
+            },
+            {
+                name: "Samsung Galaxy Watch6 Classic",
+                description: "Смарт-часы с вращающимся безелем, мониторингом здоровья и премиальным дизайном. Автономность до 40 часов.",
+                images: [],
+                price: 32990,
+                categories: [mobile._id, smartwatches._id],
+                stock: 16
+            },
+
+            // ========== ТЕЛЕВИЗОРЫ ==========
+            {
+                name: "Samsung QLED Q80C 65\"",
+                description: "4K QLED телевизор с технологией Quantum HDR, поддержкой HDR10+ и игровым режимом 120 Гц. Яркое и контрастное изображение.",
+                images: [],
+                price: 129990,
+                categories: [tv._id, televisions._id],
+                stock: 5
+            },
+            {
+                name: "LG OLED C3 55\"",
+                description: "OLED телевизор с идеальным черным цветом, поддержкой Dolby Vision и встроенным голосовым помощником. Кинематографическое качество изображения.",
+                images: [],
+                price: 109990,
+                categories: [tv._id, televisions._id],
+                stock: 3
+            },
+
+            // ========== АУДИОСТАНАЦИИ ==========
+            {
+                name: "Sonos Beam Soundbar",
+                description: "Компактная звуковая панель с Dolby Atmos, голосовыми помощниками и простой настройкой. Объемный звук для фильмов и музыки.",
+                images: [],
+                price: 49990,
+                categories: [tv._id, audioSystems._id],
+                stock: 11
+            },
+
+            // ========== КУХОННАЯ ТЕХНИКА ==========
+            {
+                name: "Philips Airfryer XXL",
+                description: "Фритюрница горячим воздухом с технологией Rapid Air, объемом 1.4 кг. Приготовление с минимальным количеством масла.",
+                images: [],
+                price: 15990,
+                categories: [homeTech._id, houseAppliances._id],
+                stock: 15
+            },
+            {
+                name: "De'Longhi Dinamica Plus ECAM370.95.T",
+                description: "Полностью автоматическая кофемашина с технологией LatteCrema для идеального капучино. 13 степеней помола кофе.",
+                images: [],
+                price: 79990,
+                categories: [homeTech._id, houseAppliances._id],
+                stock: 4
+            },
+
+            // ========== ТЕХНИКА ДЛЯ УБОРКИ ==========
+            {
+                name: "Dyson V15 Detect Absolute",
+                description: "Беспроводной пылесос с лазерной подсветкой пыли, автоматическим определением типа покрытия и мощной тягой.",
+                images: [],
+                price: 69990,
+                categories: [homeTech._id, cleaningTech._id],
+                stock: 8
+            },
+            {
+                name: "iRobot Roomba j7+",
+                description: "Робот-пылесос с самоочисткой, навигацией PrecisionVision и функцией избегания препятствий. Умная уборка без участия человека.",
+                images: [],
+                price: 89990,
+                categories: [homeTech._id, cleaningTech._id],
+                stock: 6
+            },
+
+            // ========== Другая техника ==========
+            {
+                name: "Xiaomi Smart Air Purifier 4",
+                description: "Очиститель воздуха с HEPA фильтром, УФ-стерилизацией и подключением к умному дому. Эффективная очистка от аллергенов и бактерий.",
+                images: [],
+                price: 14990,
+                categories: [homeTech._id, otherTech._id],
+                stock: 12
+            }
+        ]);
+
+        
+        console.log('БД успешно заполнена данными о товарах!')
+    } catch (error) {
+        console.error('Ошибка заполнения базы:', error);
+    }
+}
+
+await CreateCategories();
+await CreateProducts();
+
+mongoose.disconnect();
+//src\app.js
+import express from 'express';
+import mongoose from 'mongoose';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+import sessionMiddleware from './middleware/session.js';
+import corsMiddleware from './middleware/cors.js';
+import errorMiddleware from './middleware/errorHandler.js';
+import { attachUser } from './middleware/auth.js';
+
+import authRoutes from './routes/authRoutes.js';
+import fileRoutes from "./routes/fileRoutes.js";
+import adminRoutes from './routes/adminRoutes.js';
+import productRoutes from './routes/productRoutes.js';
+import cartRoutes from './routes/cartRoutes.js';
+import orderRoutes from './routes/orderRoutes.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const app = express();
+
+console.log('Connecting to mongoDB')
+await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/el-store-db?directConnection=true')
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('MongoDB connection error:', err));
+
+app.use(express.json());
+app.use(sessionMiddleware);
+app.use(attachUser);
+app.use(corsMiddleware);
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/files', fileRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/product', productRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'public')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  });
+}
+
+app.use(errorMiddleware);
+
+app.use('*', (req, res) => {
+  res.status(404).json({ error: 'Маршрут не найден' });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+//src\controllers\adminCategoryController.js
+// src/controllers/adminCategoryController.js
+import Category from '../models/Category.js';
+import Product from '../models/Product.js';
+
+export const createCategory = async (req, res) => {
+    try {
+        const { name, parentCategory } = req.body;
+
+        if (!name || name.trim().length === 0) {
+            return res.status(400).json({ error: 'Название категории обязательно' });
+        }
+
+        if (parentCategory) {
+            const parent = await Category.findById(parentCategory);
+            if (!parent) {
+                return res.status(400).json({ error: 'Родительская категория не найдена' });
+            }
+        }
+
+        const category = new Category({
+            name: name.trim(),
+            parentCategory: parentCategory || null
+        });
+
+        await category.save();
+
+        res.status(201).json({
+            message: 'Категория успешно создана',
+            category
+        });
+    } catch (error) {
+        console.error('Ошибка создания категории:', error);
+        res.status(500).json({ error: 'Ошибка создания категории' });
+    }
+};
+
+export const updateCategory = async (req, res) => {
+    try {
+        const { categoryId } = req.params;
+        const { name, parentCategory } = req.body;
+
+        const category = await Category.findById(categoryId);
+        if (!category) {
+            return res.status(404).json({ error: 'Категория не найдена' });
+        }
+
+        // Проверка на циклические ссылки
+        if (parentCategory) {
+            if (parentCategory === categoryId) {
+                return res.status(400).json({ error: 'Категория не может быть родителем самой себя' });
+            }
+
+            const parent = await Category.findById(parentCategory);
+            if (!parent) {
+                return res.status(400).json({ error: 'Родительская категория не найдена' });
+            }
+
+            // Проверка на создание цикла
+            let currentParent = parent.parentCategory;
+            while (currentParent) {
+                if (currentParent.toString() === categoryId) {
+                    return res.status(400).json({ error: 'Невозможно создать циклическую ссылку в иерархии категорий' });
+                }
+                const nextParent = await Category.findById(currentParent);
+                currentParent = nextParent ? nextParent.parentCategory : null;
+            }
+        }
+
+        // Обновление полей
+        if (name && name.trim().length > 0) {
+            category.name = name.trim();
+        }
+
+        if (parentCategory !== undefined) {
+            category.parentCategory = parentCategory || null;
+        }
+
+        await category.save();
+
+        res.json({
+            message: 'Категория успешно обновлена',
+            category
+        });
+    } catch (error) {
+        console.error('Ошибка обновления категории:', error);
+        res.status(500).json({ error: 'Ошибка обновления категории' });
+    }
+};
+
+export const deleteCategory = async (req, res) => {
+    try {
+        const { categoryId } = req.params;
+
+        const category = await Category.findById(categoryId);
+        if (!category) {
+            return res.status(404).json({ error: 'Категория не найдена' });
+        }
+
+        const parentCategoryId = category.parentCategory;
+
+        // 1. Обновляем подкатегории (перемещаем на уровень выше)
+        await Category.updateMany(
+            { parentCategory: categoryId },
+            { parentCategory: parentCategoryId }
+        );
+
+        // 2. Обновляем товары - только удаляем категорию из массива
+        const productsToUpdate = await Product.find({ categories: categoryId });
+
+        for (const product of productsToUpdate) {
+            // Удаляем удаляемую категорию из массива
+            product.categories = product.categories.filter(
+                catId => catId.toString() !== categoryId
+            );
+
+            // Если у товара не осталось категорий И есть родительская категория,
+            // добавляем родительскую категорию
+            if (product.categories.length === 0 && parentCategoryId) {
+                product.categories.push(parentCategoryId);
+            }
+
+            await product.save();
+        }
+
+        // 3. Удаляем саму категорию
+        await Category.findByIdAndDelete(categoryId);
+
+        res.json({
+            message: 'Категория успешно удалена',
+            deletedCategory: {
+                id: category._id,
+                name: category.name
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка удаления категории:', error);
+        res.status(500).json({ error: 'Ошибка удаления категории' });
+    }
+};
+
+export const getCategoryTree = async (req, res) => {
+    try {
+        const categories = await Category.find().lean();
+
+        const buildTree = (parentId = null) => {
+            return categories
+                .filter(cat =>
+                    (cat.parentCategory && cat.parentCategory.toString()) === parentId ||
+                    (!cat.parentCategory && !parentId)
+                )
+                .map(cat => ({
+                    ...cat,
+                    children: buildTree(cat._id.toString())
+                }));
+        };
+
+        const tree = buildTree();
+
+        res.json({
+            categories: tree,
+            total: categories.length
+        });
+    } catch (error) {
+        console.error('Ошибка получения дерева категорий:', error);
+        res.status(500).json({ error: 'Ошибка получения дерева категорий' });
+    }
+};
+//src\controllers\adminController.js
+// src/controllers/adminController.js
+import User from '../models/User.js';
+
+export const getUsers = async (req, res) => {
+    try {
+        const { page = 1, limit = 10, search = '' } = req.query;
+
+        const filter = {};
+        if (search) {
+            filter.$or = [
+                { login: { $regex: search, $options: 'i' } },
+                { displayName: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const users = await User.find(filter)
+            .select('-passwordHash')
+            .limit(limit * 1)
+            .skip((page - 1) * limit)
+            .sort({ createdAt: -1 });
+
+        const total = await User.countDocuments(filter);
+
+        res.json({
+            users,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page,
+            total
+        });
+    } catch (error) {
+        console.error('Ошибка получения пользователей:', error);
+        res.status(500).json({ error: 'Ошибка получения списка пользователей' });
+    }
+};
+
+export const updateUserRole = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { role } = req.body;
+
+        if (!['ПОКУПАТЕЛЬ', 'АДМИНИСТРАТОР'].includes(role)) {
+            return res.status(400).json({ error: 'Некорректная роль' });
+        }
+
+        // Не позволяем изменять свою собственную роль
+        if (userId === req.session.userId) {
+            return res.status(400).json({ error: 'Нельзя изменить свою собственную роль' });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { role },
+            { new: true }
+        ).select('-passwordHash');
+
+        if (!user) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        res.json({
+            message: 'Роль пользователя успешно обновлена',
+            user
+        });
+    } catch (error) {
+        console.error('Ошибка обновления роли:', error);
+        res.status(500).json({ error: 'Ошибка обновления роли пользователя' });
+    }
+};
+//src\controllers\authController.js
+import User from '../models/User.js';
+import { hashPassword, comparePassword, validatePassword } from '../utils/password.js';
+
+export const register = async (req, res) => {
+    try {
+        const { login, displayName, email, password } = req.body;
+
+        if (!login || !displayName || !email || !password) {
+            return res.status(400).json({ error: 'Все поля обязательны для заполнения' });
+        }
+
+        const passwordError = validatePassword(password);
+        if (passwordError) {
+            return res.status(400).json({ error: passwordError });
+        }
+
+        const existingUser = await User.findOne({
+            $or: [{ login }, { email }]
+        });
+
+        if (existingUser) {
+            return res.status(400).json({ error: 'Пользователь с таким логином или email уже существует' });
+        }
+
+        // Создание пользователя
+        const passwordHash = await hashPassword(password);
+        const user = new User({
+            login,
+            displayName,
+            email,
+            passwordHash,
+            role: 'ПОКУПАТЕЛЬ'
+        });
+
+        await user.save();
+
+        // Автоматический логин после регистрации
+        req.session.userId = user._id.toString();
+        req.session.userLogin = user.login;
+        req.session.userRole = user.role;
+
+        res.status(201).json({
+            message: 'Пользователь успешно зарегистрирован',
+            user: {
+                id: user._id,
+                login: user.login,
+                displayName: user.displayName,
+                email: user.email,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка регистрации:', error);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+};
+
+export const login = async (req, res) => {
+    try {
+        const { login, password } = req.body;
+
+        if (!login || !password) {
+            return res.status(400).json({ error: 'Логин и пароль обязательны' });
+        }
+
+        // Поиск пользователя
+        const user = await User.findOne({
+            $or: [{ login }, { email: login }]
+        });
+
+        if (!user) {
+            return res.status(401).json({ error: 'Неверный логин или пароль' });
+        }
+
+        // Проверка пароля
+        const isPasswordValid = await comparePassword(password, user.passwordHash);
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: 'Неверный логин или пароль' });
+        }
+
+        // Создание сессии
+        req.session.userId = user._id.toString();
+        req.session.userLogin = user.login;
+        req.session.userRole = user.role;
+
+        res.json({
+            message: 'Успешный вход в систему',
+            user: {
+                id: user._id,
+                login: user.login,
+                displayName: user.displayName,
+                email: user.email,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка входа:', error);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+};
+
+export const logout = (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ error: 'Ошибка при выходе' });
+        }
+        res.clearCookie('sessionId');
+        res.json({ message: 'Успешный выход из системы' });
+    });
+};
+
+export const getCurrentUser = async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(200).json({ user: null });
+        }
+
+        const user = await User.findById(req.session.userId)
+            .select('-passwordHash');
+
+        if (!user) {
+            // Если пользователь не найден, очищаем сессию
+            req.session.destroy();
+            return res.status(200).json({ user: null });
+        }
+
+        res.json({
+            user: {
+                id: user._id,
+                login: user.login,
+                displayName: user.displayName,
+                email: user.email,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка получения пользователя:', error);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+};
+//src\controllers\cartController.js
+import Cart from '../models/Cart.js';
+import Product from '../models/Product.js';
+
+export const getCart = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        // Находим корзину пользователя и наполняем данными о товарах
+        const cart = await Cart.findOne({ userId })
+            .populate({
+                path: 'items.productId',
+                select: 'name description images price stock categories',
+                populate: {
+                    path: 'categories',
+                    select: 'name'
+                }
+            });
+
+        if (!cart) {
+            // Если корзины нет, возвращаем пустую
+            return res.json({
+                items: [],
+                totalItems: 0,
+                totalPrice: 0
+            });
+        }
+
+        // Рассчитываем общую стоимость
+        let totalPrice = 0;
+        let totalItems = 0;
+
+        const enrichedItems = cart.items.map(item => {
+            const itemTotal = item.productId.price * item.quantity;
+            totalPrice += itemTotal;
+            totalItems += item.quantity;
+
+            return {
+                productId: item.productId._id,
+                quantity: item.quantity,
+                product: {
+                    _id: item.productId._id,
+                    name: item.productId.name,
+                    description: item.productId.description,
+                    images: item.productId.images,
+                    price: item.productId.price,
+                    stock: item.productId.stock,
+                    categories: item.productId.categories
+                },
+                itemTotal: itemTotal
+            };
+        });
+
+        res.json({
+            items: enrichedItems,
+            totalItems,
+            totalPrice,
+            cartId: cart._id
+        });
+    } catch (error) {
+        console.error('Ошибка получения корзины:', error);
+        res.status(500).json({ error: 'Ошибка получения корзины' });
+    }
+};
+
+export const addToCart = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const { productId, quantity = 1 } = req.body;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        if (!productId) {
+            return res.status(400).json({ error: 'ID товара обязательно' });
+        }
+
+        // Проверяем существование товара
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ error: 'Товар не найден' });
+        }
+
+        // Проверяем наличие на складе
+        if (product.stock < quantity) {
+            return res.status(400).json({
+                error: 'Недостаточно товара на складе',
+                available: product.stock
+            });
+        }
+
+        // Ищем корзину пользователя
+        let cart = await Cart.findOne({ userId });
+
+        if (!cart) {
+            // Создаем новую корзину
+            cart = new Cart({
+                userId,
+                items: [{ productId, quantity }]
+            });
+        } else {
+            // Проверяем, есть ли товар уже в корзине
+            const existingItemIndex = cart.items.findIndex(
+                item => item.productId.toString() === productId
+            );
+
+            if (existingItemIndex > -1) {
+                // Увеличиваем количество
+                const newQuantity = cart.items[existingItemIndex].quantity + quantity;
+
+                // Проверяем доступность
+                if (product.stock < newQuantity) {
+                    return res.status(400).json({
+                        error: 'Недостаточно товара на складе',
+                        available: product.stock,
+                        currentInCart: cart.items[existingItemIndex].quantity
+                    });
+                }
+
+                cart.items[existingItemIndex].quantity = newQuantity;
+            } else {
+                // Добавляем новый товар
+                cart.items.push({ productId, quantity });
+            }
+        }
+
+        await cart.save();
+
+        // Получаем обновленную корзину с полными данными
+        const updatedCart = await Cart.findById(cart._id)
+            .populate({
+                path: 'items.productId',
+                select: 'name price images'
+            });
+
+        res.status(200).json({
+            message: 'Товар добавлен в корзину',
+            cart: updatedCart
+        });
+    } catch (error) {
+        console.error('Ошибка добавления в корзину:', error);
+        res.status(500).json({ error: 'Ошибка добавления в корзину' });
+    }
+};
+
+export const updateCartItem = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const { productId } = req.params;
+        const { quantity } = req.body;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        if (!quantity || quantity < 0) {
+            return res.status(400).json({ error: 'Количество должно быть положительным числом' });
+        }
+
+        // Проверяем существование товара
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ error: 'Товар не найден' });
+        }
+
+        // Проверяем наличие на складе
+        if (product.stock < quantity) {
+            return res.status(400).json({
+                error: 'Недостаточно товара на складе',
+                available: product.stock
+            });
+        }
+
+        // Ищем корзину пользователя
+        const cart = await Cart.findOne({ userId });
+        if (!cart) {
+            return res.status(404).json({ error: 'Корзина не найдена' });
+        }
+
+        // Находим товар в корзине
+        const itemIndex = cart.items.findIndex(
+            item => item.productId.toString() === productId
+        );
+
+        if (itemIndex === -1) {
+            return res.status(404).json({ error: 'Товар не найден в корзине' });
+        }
+
+        if (quantity === 0) {
+            // Удаляем товар из корзины
+            cart.items.splice(itemIndex, 1);
+        } else {
+            // Обновляем количество
+            cart.items[itemIndex].quantity = quantity;
+        }
+
+        await cart.save();
+
+        // Если корзина пуста, удаляем её
+        if (cart.items.length === 0) {
+            await Cart.findByIdAndDelete(cart._id);
+        }
+
+        res.json({
+            message: quantity === 0 ? 'Товар удален из корзины' : 'Количество обновлено',
+            cart
+        });
+    } catch (error) {
+        console.error('Ошибка обновления корзины:', error);
+        res.status(500).json({ error: 'Ошибка обновления корзины' });
+    }
+};
+
+export const removeFromCart = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const { productId } = req.params;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const cart = await Cart.findOne({ userId });
+        if (!cart) {
+            return res.status(404).json({ error: 'Корзина не найдена' });
+        }
+
+        const initialLength = cart.items.length;
+        cart.items = cart.items.filter(
+            item => item.productId.toString() !== productId
+        );
+
+        if (cart.items.length === initialLength) {
+            return res.status(404).json({ error: 'Товар не найден в корзине' });
+        }
+
+        await cart.save();
+
+        // Если корзина пуста, удаляем её
+        if (cart.items.length === 0) {
+            await Cart.findByIdAndDelete(cart._id);
+        }
+
+        res.json({
+            message: 'Товар удален из корзины',
+            cart
+        });
+    } catch (error) {
+        console.error('Ошибка удаления из корзины:', error);
+        res.status(500).json({ error: 'Ошибка удаления из корзины' });
+    }
+};
+
+export const clearCart = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const result = await Cart.deleteOne({ userId });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ error: 'Корзина не найдена' });
+        }
+
+        res.json({
+            message: 'Корзина очищена'
+        });
+    } catch (error) {
+        console.error('Ошибка очистки корзины:', error);
+        res.status(500).json({ error: 'Ошибка очистки корзины' });
+    }
+};
+//src\controllers\fileController.js
+import {
+    ensureProductDir,
+    deleteProductDir,
+    getProductFiles,
+    deleteProductFile,
+    getFileUrl
+} from '../utils/fileUtils.js';
+import Product from '../models/Product.js';
+
+export const uploadProductImages = async (req, res) => {
+    try {
+        const { productId } = req.params;
+
+        // Проверяем существование товара
+        const product = await Product.findById(productId).populate('categories');
+        if (!product) {
+            return res.status(404).json({ error: 'Товар не найден' });
+        }
+
+        // Создаем директорию если не существует
+        await ensureProductDir(productId);
+
+        const files = await Promise.all(
+            req.files.map(async (file) => {
+                const url = await getFileUrl(productId, file.filename);
+                return {
+                    filename: file.filename,
+                    url: url,
+                    originalName: file.originalname,
+                    size: file.size,
+                    mimetype: file.mimetype
+                };
+            })
+        );
+
+        // Обновляем товар (добавляем изображения)
+        if (!product.images) product.images = [];
+        const newUrls = files.map(f => f.url);
+        product.images.push(...newUrls);
+        await product.save();
+
+        res.status(201).json({
+            message: `Изображения успешно загружены (${files.length})`,
+            files,
+            product: {
+                id: product._id,
+                images: product.images
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка загрузки изображений:', error);
+
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'Размер файла превышает 5MB' });
+        }
+        if (error.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({ error: 'Превышено максимальное количество файлов (10)' });
+        }
+
+        res.status(500).json({ error: 'Ошибка загрузки изображений' });
+    }
+};
+
+export const getProductImages = async (req, res) => {
+    try {
+        const { productId } = req.params;
+
+        // Проверяем существование товара
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ error: 'Товар не найден' });
+        }
+
+        const files = await getProductFiles(productId);
+        res.json({
+            productId,
+            images: files,
+            total: files.length
+        });
+    } catch (error) {
+        console.error('Ошибка получения изображений:', error);
+        res.status(500).json({ error: 'Ошибка получения изображений' });
+    }
+};
+
+export const deleteProductImage = async (req, res) => {
+    try {
+        const { productId, filename } = req.params;
+
+        // Проверяем существование товара
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ error: 'Товар не найден' });
+        }
+
+        const success = await deleteProductFile(productId, filename);
+
+        if (!success) {
+            return res.status(404).json({ error: 'Файл не найден' });
+        }
+
+        // Получаем полный URL для удаления из массива изображений
+        const fileUrl = await getFileUrl(productId, filename);
+
+        // Обновляем товар (удаляем ссылку на изображение)
+        product.images = product.images.filter(img => img !== fileUrl);
+        await product.save();
+
+        res.json({
+            message: 'Изображение успешно удалено',
+            product: {
+                id: product._id,
+                images: product.images
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка удаления изображения:', error);
+        res.status(500).json({ error: 'Ошибка удаления изображения' });
+    }
+};
+
+export const deleteAllProductImages = async (req, res) => {
+    try {
+        const { productId } = req.params;
+
+        // Проверяем существование товара
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ error: 'Товар не найден' });
+        }
+
+        const success = await deleteProductDir(productId);
+
+        // Очищаем ссылки на изображения в товаре
+        product.images = [];
+        await product.save();
+
+        res.json({
+            message: 'Все изображения товара успешно удалены',
+            product: {
+                id: product._id,
+                images: product.images
+            }
+        });
+    } catch (error) {
+        console.error('Ошибка удаления изображений:', error);
+        res.status(500).json({ error: 'Ошибка удаления изображений' });
+    }
+};
+
+//src\controllers\orderController.js
+import Order from '../models/Order.js';
+import Cart from '../models/Cart.js';
+import Product from '../models/Product.js';
+
+export const createOrderFromCart = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        // 1. Получаем корзину пользователя
+        const cart = await Cart.findOne({ userId })
+            .populate('items.productId');
+
+        if (!cart || cart.items.length === 0) {
+            return res.status(400).json({ error: 'Корзина пуста' });
+        }
+
+        // 2. Проверяем наличие товаров на складе
+        const stockIssues = [];
+        let totalAmount = 0;
+
+        for (const item of cart.items) {
+            const product = item.productId;
+            if (product.stock < item.quantity) {
+                stockIssues.push({
+                    productId: product._id,
+                    name: product.name,
+                    requested: item.quantity,
+                    available: product.stock
+                });
+            }
+            totalAmount += product.price * item.quantity;
+        }
+
+        if (stockIssues.length > 0) {
+            return res.status(400).json({
+                error: 'Недостаточно товаров на складе',
+                issues: stockIssues
+            });
+        }
+
+        // 3. Создаём заказ
+        const order = new Order({
+            userId,
+            items: cart.items.map(item => ({
+                productId: item.productId._id,
+                quantity: item.quantity
+            })),
+            deliveryInfo: {
+                address: '',
+                deliveryTime: null,
+                courierNotes: ''
+            },
+            paymentInfo: {
+                cardNumber: '',
+                cvc: '',
+                expirationDate: ''
+            },
+            status: 'НОВЫЙ',
+            totalAmount
+        });
+
+        await order.save();
+
+        // 4. Очищаем корзину (НЕ удаляем из БД, а очищаем items)
+        cart.items = [];
+        await cart.save();
+
+        // 5. Заполняем ответ с информацией о товарах
+        const populatedOrder = await Order.findById(order._id)
+            .populate({
+                path: 'items.productId',
+                select: 'name price images categories'
+            });
+
+        res.status(201).json({
+            message: 'Заказ успешно создан',
+            order: populatedOrder
+        });
+
+    } catch (error) {
+        console.error('Ошибка создания заказа:', error);
+        res.status(500).json({ error: 'Ошибка создания заказа' });
+    }
+};
+
+export const getUserOrders = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const { page = 1, limit = 10, status } = req.query;
+
+        const filter = { userId };
+        if (status && ['НОВЫЙ', 'ОПЛАЧЕН', 'ДОСТАВЛЕН', 'ОТМЕНЁН'].includes(status)) {
+            filter.status = status;
+        }
+
+        const orders = await Order.find(filter)
+            .populate({
+                path: 'items.productId',
+                select: 'name price images'
+            })
+            .sort({ createdAt: -1 })
+            .limit(limit * 1)
+            .skip((page - 1) * limit);
+
+        const total = await Order.countDocuments(filter);
+
+        res.json({
+            orders,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page,
+            total
+        });
+
+    } catch (error) {
+        console.error('Ошибка получения заказов:', error);
+        res.status(500).json({ error: 'Ошибка получения заказов' });
+    }
+};
+
+export const getOrderDetails = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const { orderId } = req.params;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const order = await Order.findOne({ _id: orderId, userId })
+            .populate({
+                path: 'items.productId',
+                select: 'name description price images stock categories',
+                populate: {
+                    path: 'categories',
+                    select: 'name'
+                }
+            });
+
+        if (!order) {
+            return res.status(404).json({ error: 'Заказ не найден' });
+        }
+
+        res.json({ order });
+
+    } catch (error) {
+        console.error('Ошибка получения деталей заказа:', error);
+        res.status(500).json({ error: 'Ошибка получения деталей заказа' });
+    }
+};
+
+export const updateOrder = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const { orderId } = req.params;
+        const updateData = req.body;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        // 1. Находим заказ
+        const order = await Order.findOne({ _id: orderId, userId });
+
+        if (!order) {
+            return res.status(404).json({ error: 'Заказ не найден' });
+        }
+
+        // 2. Проверяем возможность редактирования
+        if (order.status === 'ДОСТАВЛЕН') {
+            return res.status(400).json({ error: 'Заказ уже доставлен, редактирование невозможно' });
+        }
+
+        if (order.status === 'ОТМЕНЁН') {
+            return res.status(400).json({ error: 'Заказ отменён' });
+        }
+
+        // 3. В зависимости от статуса разрешаем разные поля
+        let allowedFields = [];
+
+        if (order.status === 'НОВЫЙ') {
+            // Можно менять всё, кроме статуса
+            allowedFields = ['deliveryInfo', 'paymentInfo', 'items'];
+
+            // Если меняем состав - проверяем наличие
+            if (updateData.items) {
+                for (const item of updateData.items) {
+                    const product = await Product.findById(item.productId);
+                    if (!product || product.stock < item.quantity) {
+                        return res.status(400).json({
+                            error: `Товар "${product?.name || item.productId}" недоступен в нужном количестве`
+                        });
+                    }
+                }
+            }
+        } else if (order.status === 'ОПЛАЧЕН') {
+            // Можно менять только доставку
+            allowedFields = ['deliveryInfo'];
+        }
+
+        // 4. Фильтруем обновляемые поля
+        const filteredUpdate = {};
+        allowedFields.forEach(field => {
+            if (updateData[field] !== undefined) {
+                filteredUpdate[field] = updateData[field];
+            }
+        });
+
+        // 5. Если менялись товары - пересчитываем сумму
+        if (updateData.items) {
+            let totalAmount = 0;
+            for (const item of updateData.items) {
+                const product = await Product.findById(item.productId);
+                totalAmount += product.price * item.quantity;
+            }
+            filteredUpdate.totalAmount = totalAmount;
+        }
+
+        // 6. Обновляем заказ
+        Object.assign(order, filteredUpdate);
+        order.updatedAt = new Date();
+        await order.save();
+
+        // 7. Возвращаем обновлённый заказ
+        const updatedOrder = await Order.findById(orderId)
+            .populate({
+                path: 'items.productId',
+                select: 'name price images'
+            });
+
+        res.json({
+            message: 'Заказ успешно обновлён',
+            order: updatedOrder
+        });
+
+    } catch (error) {
+        console.error('Ошибка обновления заказа:', error);
+        res.status(500).json({ error: 'Ошибка обновления заказа' });
+    }
+};
+
+export const processPayment = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const { orderId } = req.params;
+        const { cardNumber, cvc, expirationDate } = req.body;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        // Валидация данных карты (упрощённая)
+        if (!cardNumber || !cardNumber.match(/^\d{16}$/)) {
+            return res.status(400).json({ error: 'Неверный номер карты' });
+        }
+        if (!cvc || !cvc.match(/^\d{3}$/)) {
+            return res.status(400).json({ error: 'Неверный CVC' });
+        }
+        if (!expirationDate || !expirationDate.match(/^(0[1-9]|1[0-2])\/\d{2}$/)) {
+            return res.status(400).json({ error: 'Неверный срок действия' });
+        }
+
+        // Находим заказ
+        const order = await Order.findOne({ _id: orderId, userId })
+            .populate('items.productId');
+
+        if (!order) {
+            return res.status(404).json({ error: 'Заказ не найден' });
+        }
+
+        if (order.status !== 'НОВЫЙ') {
+            return res.status(400).json({
+                error: `Заказ уже ${order.status === 'ОПЛАЧЕН' ? 'оплачен' : 'не может быть оплачен'}`
+            });
+        }
+
+        // Проверяем наличие товаров (на случай, если запасы изменились)
+        for (const item of order.items) {
+            const product = item.productId;
+            if (product.stock < item.quantity) {
+                return res.status(400).json({
+                    error: `Товар "${product.name}" недоступен в нужном количестве`,
+                    available: product.stock
+                });
+            }
+        }
+
+        // Уменьшаем остатки на складе
+        for (const item of order.items) {
+            await Product.findByIdAndUpdate(
+                item.productId._id,
+                { $inc: { stock: -item.quantity } }
+            );
+        }
+
+        // Обновляем заказ
+        order.paymentInfo = { cardNumber, cvc, expirationDate };
+        order.status = 'ОПЛАЧЕН';
+        order.updatedAt = new Date();
+        await order.save();
+
+        res.json({
+            message: 'Оплата успешно проведена',
+            order: {
+                id: order._id,
+                status: order.status,
+                totalAmount: order.totalAmount
+            }
+        });
+
+    } catch (error) {
+        console.error('Ошибка обработки оплаты:', error);
+        res.status(500).json({ error: 'Ошибка обработки оплаты' });
+    }
+};
+
+export const cancelOrder = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const { orderId } = req.params;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const order = await Order.findOne({ _id: orderId, userId })
+            .populate('items.productId');
+
+        if (!order) {
+            return res.status(404).json({ error: 'Заказ не найден' });
+        }
+
+        if (order.status === 'ДОСТАВЛЕН') {
+            return res.status(400).json({ error: 'Доставленный заказ нельзя отменить' });
+        }
+
+        if (order.status === 'ОПЛАЧЕН') {
+            // Возвращаем товары на склад
+            for (const item of order.items) {
+                await Product.findByIdAndUpdate(
+                    item.productId._id,
+                    { $inc: { stock: item.quantity } }
+                );
+            }
+        } else if (order.status === 'НОВЫЙ') {
+            // Возвращаем товары в корзину
+            let cart = await Cart.findOne({ userId });
+
+            if (!cart) {
+                cart = new Cart({ userId, items: [] });
+            }
+
+            for (const item of order.items) {
+                const existingIndex = cart.items.findIndex(
+                    i => i.productId.toString() === item.productId._id.toString()
+                );
+
+                if (existingIndex > -1) {
+                    cart.items[existingIndex].quantity += item.quantity;
+                } else {
+                    cart.items.push({
+                        productId: item.productId._id,
+                        quantity: item.quantity
+                    });
+                }
+            }
+
+            await cart.save();
+        }
+
+        // Отменяем заказ
+        order.status = 'ОТМЕНЁН';
+        order.updatedAt = new Date();
+        await order.save();
+
+        res.json({
+            message: 'Заказ успешно отменён',
+            orderId: order._id,
+            status: order.status
+        });
+
+    } catch (error) {
+        console.error('Ошибка отмены заказа:', error);
+        res.status(500).json({ error: 'Ошибка отмены заказа' });
+    }
+};
+
+export const deliverOrder = async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const { orderId } = req.params;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Требуется авторизация' });
+        }
+
+        const order = await Order.findOne({ _id: orderId, userId });
+
+        if (!order) {
+            return res.status(404).json({ error: 'Заказ не найден' });
+        }
+
+        if (order.status !== 'ОПЛАЧЕН') {
+            return res.status(400).json({
+                error: 'Заказ может быть доставлен только после оплаты'
+            });
+        }
+
+        order.status = 'ДОСТАВЛЕН';
+        order.updatedAt = new Date();
+        await order.save();
+
+        res.json({
+            message: 'Заказ помечен как доставленный',
+            orderId: order._id,
+            status: order.status
+        });
+
+    } catch (error) {
+        console.error('Ошибка обновления статуса доставки:', error);
+        res.status(500).json({ error: 'Ошибка обновления статуса доставки' });
+    }
+};
+//src\controllers\productController.js
+import ProductModel from '../models/Product.js';
+
+export const products = async (req, res) => {
+    try {
+        const products = await ProductModel.find();
+        res.json({
+            products: products
+        });
+    } catch (error) {
+        console.error('Ошибка получения информации о продуктах:', error);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+}
+
+export const oneProduct = async (req, res) => {
+    try {
+        const product = await ProductModel.findById(req.params.productId);
+        if (!product) {
+            throw new Error('No such product!')
+        }
+        res.json({
+            product: product
+        });
+    } catch (error) {
+        console.error('Ошибка получения информации о продукте:', error);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+}
+
+export const search = async (req, res) => {
+    try {
+        const word = req.query.w
+        const cats = req.query.c
+
+        var searchObj = {};
+
+        if (word)
+        {
+            searchObj.$or = [
+                { name: { $regex: word, $options: "i" } },
+                { description: { $regex: word, $options: "i" } }
+            ]
+        }
+
+        if (cats)
+        {
+            searchObj.categories = { $in: cats.split(',') }
+        }
+
+        const products = await ProductModel.find(searchObj);
+        res.json({
+            products: products
+        });
+    } catch (error) {
+        console.error('Ошибка получения информации о продукте:', error);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+}
+//src\middleware\auth.js
+export const requireAuth = (req, res, next) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Требуется авторизация' });
+    }
+    next();
+};
+
+export const requireAdmin = (req, res, next) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Требуется авторизация' });
+    }
+    if (req.session.userRole !== 'АДМИНИСТРАТОР') {
+        return res.status(403).json({ error: 'Недостаточно прав' });
+    }
+    next();
+};
+
+export const attachUser = (req, res, next) => {
+    if (req.session.userId) {
+        req.user = {
+            id: req.session.userId,
+            login: req.session.userLogin,
+            role: req.session.userRole
+        };
+    }
+    next();
+};
+//src\middleware\cors.js
+import cors from "cors";
+
+export default cors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+});
+//src\middleware\errorHandler.js
+export default (err, req, res, _) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+}
+//src\middleware\session.js
+import session from 'express-session';
+import MongoStore from 'connect-mongo';
+
+export default session({
+    name: 'sessionId',
+    secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/el-store-db',
+        ttl: 24 * 60 * 60 // 1 день
+    }),
+    cookie: {
+        maxAge: 24 * 60 * 60 * 1000, // 1 день
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    }
+});
+//src\middleware\upload.js
+import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs/promises';
+import { v4 as uuidv4 } from 'uuid';
+import Product from '../models/Product.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
+
+// Создаем директорию uploads если не существует
+try {
+    await fs.access(UPLOADS_DIR);
+} catch {
+    await fs.mkdir(UPLOADS_DIR, { recursive: true });
+}
+
+// Конфигурация хранилища
+const storage = multer.diskStorage({
+    destination: async (req, file, cb) => {
+        try {
+            const { productId } = req.params;
+
+            // Находим товар чтобы получить первую категорию
+            const product = await Product.findById(productId).populate('categories');
+            if (!product) {
+                return cb(new Error('Товар не найден'));
+            }
+
+            // Берем первую категорию для создания пути или используем 'uncategorized'
+            const categoryId = product.categories[0]?._id?.toString() || 'uncategorized';
+
+            const dir = path.join(UPLOADS_DIR, categoryId, productId);
+
+            // Создаем директорию если не существует
+            await fs.mkdir(dir, { recursive: true });
+
+            cb(null, dir);
+        } catch (error) {
+            cb(error);
+        }
+    },
+    filename: (req, file, cb) => {
+        const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+        cb(null, uniqueName);
+    }
+});
+
+// Фильтр файлов - только изображения
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Разрешены только файлы изображений'), false);
+    }
+};
+
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB
+        files: 10 // максимум 10 файлов за раз
+    }
+});
+
+// Обработчик ошибок multer
+upload.errorHandler = (err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'Размер файла превышает 5MB' });
+        }
+        if (err.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({ error: 'Превышено максимальное количество файлов (10)' });
+        }
+    }
+    next(err);
+};
+
+export default upload;
+//src\models\Cart.js
+import mongoose from 'mongoose';
+import cartSchema from './schemas/cart-schema.js';
+
+export default mongoose.model('Cart', cartSchema);
+//src\models\Category.js
+import mongoose from 'mongoose';
+import categorySchema from './schemas/category-schema.js';
+
+export default mongoose.model('Category', categorySchema);
+//src\models\Order.js
+import mongoose from 'mongoose';
+import orderSchema from './schemas/order-schema.js';
+
+export default mongoose.model('Order', orderSchema);
+//src\models\Product.js
+import mongoose from 'mongoose';
+import productSchema from './schemas/product-schema.js';
+
+export default mongoose.model('Product', productSchema);
+//src\models\schemas\cart-schema.js
+import mongoose from "mongoose";
+
+export default new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        unique: true
+    },
+    items: [{
+        productId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Product',
+            required: true
+        },
+        quantity: {
+            type: Number,
+            required: true,
+            min: 1
+        }
+    }]
+});
+//src\models\schemas\category-schema.js
+import mongoose from "mongoose";
+
+export default new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+        minlength: 1,
+        maxlength: 120
+    },
+    parentCategory: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+        default: null
+    }
+});
+//src\models\schemas\order-schema.js
+// src/models/schemas/order-schema.js (обновление)
+import mongoose from "mongoose";
+
+export default new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    items: [{
+        productId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Product',
+            required: true
+        },
+        quantity: {
+            type: Number,
+            required: true,
+            min: 1
+        }
+    }],
+    deliveryInfo: {
+        address: {
+            type: String,
+            required: false,
+            default: ''
+        },
+        deliveryTime: {
+            type: Date,
+            required: false,
+            default: null
+        },
+        courierNotes: {
+            type: String,
+            default: ''
+        }
+    },
+    paymentInfo: {
+        cardNumber: {
+            type: String,
+            required: false,
+            default: '',
+            match: [/^\d{16}$/, 'Неверный формат номера карты'],
+        },
+        cvc: {
+            type: String,
+            required: false,
+            default: '',
+            match: [/^\d{3}$/, 'CVC должен содержать 3 цифры'],
+        },
+        expirationDate: {
+            type: String,
+            required: false,
+            default: '',
+            match: [/^(0[1-9]|1[0-2])\/\d{2}$/, 'Неверный формат срока действия (MM/YY)'],
+        },
+    },
+    status: {
+        type: String,
+        enum: ['НОВЫЙ', 'ОПЛАЧЕН', 'ДОСТАВЛЕН', 'ОТМЕНЁН'],
+        default: 'НОВЫЙ'
+    },
+    totalAmount: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+//src\models\schemas\product-schema.js
+import mongoose from "mongoose";
+
+export default new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+        minlength: 1,
+        maxlength: 255
+    },
+    description: {
+        type: String,
+        required: true
+    },
+    images: [{
+        type: String
+    }],
+    price: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    categories: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category'
+    }],
+    stock: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0
+    }
+});
+//src\models\schemas\user-schema.js
+import mongoose from 'mongoose';
+
+export default new mongoose.Schema({
+    login: {
+        type: String,
+        required: true,
+        unique: true,
+        minlength: 1,
+        maxlength: 60
+    },
+    displayName: {
+        type: String,
+        required: true,
+        minlength: 1,
+        maxlength: 60
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    },
+    passwordHash: {
+        type: String,
+        required: true
+    },
+    role: {
+        type: String,
+        enum: ['ПОКУПАТЕЛЬ', 'АДМИНИСТРАТОР'],
+        default: 'ПОКУПАТЕЛЬ'
+    }
+}, {
+    timestamps: true
+});
+//src\models\User.js
+import mongoose from 'mongoose';
+import userSchema from './schemas/user-schema.js';
+
+export default mongoose.model('User', userSchema);
+//src\routes\adminRoutes.js
+// src/routes/adminRoutes.js
+import express from 'express';
+import { getUsers, updateUserRole } from '../controllers/adminController.js';
+import {
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    getCategoryTree
+} from '../controllers/adminCategoryController.js';
+import { requireAdmin } from '../middleware/auth.js';
+
+const router = express.Router();
+
+// Управление пользователями
+router.get('/users', requireAdmin, getUsers);
+router.patch('/users/:userId/role', requireAdmin, updateUserRole);
+
+// Управление категориями
+router.post('/categories', requireAdmin, createCategory);
+router.put('/categories/:categoryId', requireAdmin, updateCategory);
+router.delete('/categories/:categoryId', requireAdmin, deleteCategory);
+
+// HACK мне кажется здесь не нужен администратор, чтобы категории смотреть, потому что переписывать
+// код, чтобы у нас были разные API для пользователя и для админа, в данном случае слишком тупо
+router.get('/categories/tree', /*requireAdmin,*/ getCategoryTree);
+
+export default router;
+//src\routes\authRoutes.js
+import express from 'express';
+import {
+    register,
+    login,
+    logout,
+    getCurrentUser
+} from '../controllers/authController.js';
+import { requireAuth } from '../middleware/auth.js';
+
+const router = express.Router();
+
+// Публичные маршруты
+router.post('/register', register);
+router.post('/login', login);
+
+// Защищенные маршруты
+router.post('/logout', requireAuth, logout);
+router.get('/me', getCurrentUser);
+
+export default router;
+//src\routes\cartRoutes.js
+import express from 'express';
+import {
+    getCart,
+    addToCart,
+    updateCartItem,
+    removeFromCart,
+    clearCart
+} from '../controllers/cartController.js';
+import { requireAuth } from '../middleware/auth.js';
+
+const router = express.Router();
+
+router.use(requireAuth);
+
+router.get('/', getCart);
+router.post('/', addToCart);
+router.put('/:productId', updateCartItem);
+router.delete('/:productId', removeFromCart);
+router.delete('/', clearCart);
+
+export default router;
+//src\routes\fileRoutes.js
+// src/routes/fileRoutes.js
+import express from 'express';
+import {
+    uploadProductImages,
+    getProductImages,
+    deleteProductImage,
+    deleteAllProductImages,
+} from '../controllers/fileController.js';
+import { requireAdmin } from '../middleware/auth.js';
+import upload from '../middleware/upload.js';
+
+const router = express.Router();
+
+// Загрузка изображений товара
+router.post('/products/:productId/upload', requireAdmin, upload.array('images', 10), uploadProductImages);
+
+// Получение списка изображений товара
+router.get('/products/:productId', getProductImages);
+
+// Удаление конкретного изображения товара
+router.delete('/products/:productId/:filename', requireAdmin, deleteProductImage);
+
+// Удаление всех изображений товара
+router.delete('/products/:productId', requireAdmin, deleteAllProductImages);
+
+export default router;
+//src\routes\orderRoutes.js
+import express from 'express';
+import {
+    createOrderFromCart,
+    getUserOrders,
+    getOrderDetails,
+    updateOrder,
+    processPayment,
+    cancelOrder,
+    deliverOrder
+} from '../controllers/orderController.js';
+import { requireAuth } from '../middleware/auth.js';
+
+const router = express.Router();
+
+router.use(requireAuth);
+
+router.post('/', createOrderFromCart);
+router.get('/', getUserOrders);
+router.get('/:orderId', getOrderDetails);
+router.put('/:orderId', updateOrder);
+router.post('/:orderId/pay', processPayment);
+router.post('/:orderId/cancel', cancelOrder);
+
+router.post('/:orderId/deliver', deliverOrder);
+
+export default router;
+//src\routes\productRoutes.js
+import express from 'express';
+import {
+    products,
+    oneProduct,
+    search
+} from '../controllers/productController.js';
+
+const router = express.Router();
+
+router.get('/all', products)
+router.get('/search', search)
+router.get('/id/:productId', oneProduct)
+
+export default router;
+//src\utils\fileUtils.js
+// src/utils/fileUtils.js
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import Product from '../models/Product.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
+
+// Получение пути к директории товара
+const getProductDir = async (productId) => {
+    const product = await Product.findById(productId).populate('categories');
+    const categoryId = product?.categories[0]?._id?.toString() || 'uncategorized';
+    return path.join(UPLOADS_DIR, categoryId, productId);
+};
+
+// Получение пути к директории товара по указанной категории
+const getProductDirByCategory = (categoryId, productId) => {
+    const actualCategoryId = categoryId || 'uncategorized';
+    return path.join(UPLOADS_DIR, actualCategoryId, productId);
+};
+
+// Создание директории для товара
+export const ensureProductDir = async (productId) => {
+    const dir = await getProductDir(productId);
+    try {
+        await fs.mkdir(dir, { recursive: true });
+    } catch (error) {
+        if (error.code !== 'EEXIST') throw error;
+    }
+    return dir;
+};
+
+// Удаление директории с изображениями товара
+export const deleteProductDir = async (productId) => {
+    const dir = await getProductDir(productId);
+    try {
+        await fs.rm(dir, { recursive: true, force: true });
+        return true;
+    } catch (error) {
+        console.error(`Ошибка удаления директории ${dir}:`, error);
+        return false;
+    }
+};
+
+// Получение списка файлов товара
+export const getProductFiles = async (productId) => {
+    const dir = await getProductDir(productId);
+    try {
+        const files = await fs.readdir(dir);
+
+        // Получаем категорию для построения правильного URL
+        const product = await Product.findById(productId).populate('categories');
+        const categoryId = product?.categories[0]?._id?.toString() || 'uncategorized';
+
+        return files.map(file => ({
+            filename: file,
+            url: `/uploads/${categoryId}/${productId}/${file}`
+        }));
+    } catch (error) {
+        if (error.code === 'ENOENT') return [];
+        throw error;
+    }
+};
+
+// Удаление конкретного файла товара
+export const deleteProductFile = async (productId, filename) => {
+    const dir = await getProductDir(productId);
+    const filePath = path.join(dir, filename);
+    try {
+        await fs.unlink(filePath);
+        return true;
+    } catch (error) {
+        if (error.code === 'ENOENT') return false;
+        throw error;
+    }
+};
+
+// Получение URL для файла
+export const getFileUrl = async (productId, filename) => {
+    const product = await Product.findById(productId).populate('categories');
+    const categoryId = product?.categories[0]?._id?.toString() || 'uncategorized';
+    return `/uploads/${categoryId}/${productId}/${filename}`;
+};
+
+// Перемещение изображений товара при смене категории
+export const moveProductImages = async (productId, oldCategoryId, newCategoryId) => {
+    try {
+        const oldDir = getProductDirByCategory(oldCategoryId, productId);
+        const newDir = getProductDirByCategory(newCategoryId, productId);
+
+        // Проверяем существует ли старая директория
+        try {
+            await fs.access(oldDir);
+        } catch {
+            console.log(`Старая директория не существует: ${oldDir}`);
+            return false;
+        }
+
+        // Если директории одинаковые - не перемещаем
+        if (oldDir === newDir) {
+            return true;
+        }
+
+        // Создаем новую директорию
+        await fs.mkdir(path.dirname(newDir), { recursive: true });
+
+        // Перемещаем файлы
+        const files = await fs.readdir(oldDir);
+
+        for (const file of files) {
+            const oldPath = path.join(oldDir, file);
+            const newPath = path.join(newDir, file);
+            await fs.rename(oldPath, newPath);
+        }
+
+        // Удаляем старую директорию если пуста
+        try {
+            await fs.rmdir(oldDir);
+        } catch {
+            // Игнорируем ошибку если директория не пуста
+        }
+
+        // Обновляем URL в продукте
+        const product = await Product.findById(productId);
+        if (product && product.images) {
+            const oldBaseUrl = `/uploads/${oldCategoryId || 'uncategorized'}/${productId}/`;
+            const newBaseUrl = `/uploads/${newCategoryId || 'uncategorized'}/${productId}/`;
+
+            product.images = product.images.map(img =>
+                img.replace(oldBaseUrl, newBaseUrl)
+            );
+            await product.save();
+        }
+
+        console.log(`Изображения товара ${productId} перемещены из ${oldDir} в ${newDir}`);
+        return true;
+    } catch (error) {
+        console.error(`Ошибка перемещения изображений товара ${productId}:`, error);
+        return false;
+    }
+};
+
+// Получение текущей категории товара
+export const getProductCategory = async (productId) => {
+    const product = await Product.findById(productId).populate('categories');
+    return product?.categories[0]?._id?.toString() || 'uncategorized';
+};
+//src\utils\password.js
+import bcrypt from 'bcrypt';
+
+export const hashPassword = async (password) => {
+    const saltRounds = 12;
+    return await bcrypt.hash(password, saltRounds);
+};
+
+export const comparePassword = async (password, hash) => {
+    return await bcrypt.compare(password, hash);
+};
+
+export const validatePassword = (password) => {
+    if (password.length < 6) {
+        return 'Пароль должен содержать минимум 6 символов';
+    }
+    return null;
+};

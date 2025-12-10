@@ -32,6 +32,24 @@ const routes = [
                 meta: { requiresAuth: true }
             },
             {
+                path: 'checkout',
+                name: 'Оформление заказа',
+                component: () => import('../pages/user/CheckoutPage.vue'),
+                meta: { requiresAuth: true }
+            },
+            {
+                path: 'orders',
+                name: 'Мои заказы',
+                component: () => import('../pages/user/OrdersListPage.vue'),
+                meta: { requiresAuth: true }
+            },
+            {
+                path: 'orders/:orderId',
+                name: 'Детали заказа (пользователь)',
+                component: () => import('../pages/user/OrderDetailsPage.vue'),
+                meta: { requiresAuth: true }
+            },
+            {
                 path: 'product/:productId',
                 name: 'Продукты',
                 component: () => import('../pages/shared/ProductSubPage.vue'),
@@ -62,8 +80,13 @@ const routes = [
             },
             {
                 path: 'orders',
-                name: 'Заказы',
+                name: 'ЗаказыАдмин',
                 component: () => import('../pages/admin/OrdersSubPage.vue'),
+            },
+            {
+                path: 'orders/:orderId',
+                name: 'Детали заказа (админ)',
+                component: () => import('../pages/admin/OrderDetailsSubPage.vue'),
             },
             {
                 path: 'categories',
@@ -71,13 +94,13 @@ const routes = [
                 component: () => import('../pages/admin/CategoriesSubPage.vue'),
             },
             {
-                path: '',
-                redirect: { name: 'Товары' }
-            },
-            {
                 path: 'users',
                 name: 'Пользователи',
                 component: () => import('../pages/admin/UsersSubPage.vue'),
+            },
+            {
+                path: '',
+                redirect: { name: 'Товары' }
             }
         ]
     },

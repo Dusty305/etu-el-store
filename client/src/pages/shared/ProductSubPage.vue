@@ -131,6 +131,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProductStore } from '../../stores/product.js'
 import { useAuthStore } from '../../stores/auth.js'
+import { useCartStore } from '../../stores/cart.js'
 
 const currency = '₽'
 const imagePlaceholder = '/src/uploads/product_placeholder.png'
@@ -139,6 +140,7 @@ const route = useRoute()
 const router = useRouter()
 const productStore = useProductStore()
 const authStore = useAuthStore()
+const cartStore = useCartStore()
 
 const product = ref(null)
 const currentImageIndex = ref(0)
@@ -185,19 +187,26 @@ const decreaseQuantity = () => {
   }
 }
 
-const addToCart = () => {
+const addToCart = async () => {
   if (!authStore.isAuthenticated) {
-    alert('Необходимо авторизоваться!')
+    alert('Необходимо авторизоваться!');
+    router.push('/auth');
+    return;
   }
-  else if (product.value && product.value.stock > 0) {
-    const item = {
-      id: product.value._id,
-      quantity: quantity.value
+
+  if (product.value && product.value.stock > 0) {
+    try {
+      const result = await cartStore.addToCart(product.value._id, quantity.value);
+      if (result.success) {
+        alert(`Товар "${product.value.name}" (${quantity.value} шт.) добавлен в корзину!`);
+      } else {
+        alert(result.error || 'Ошибка добавления в корзину');
+      }
+    } catch (error) {
+      alert('Ошибка добавления в корзину');
     }
-    
-    // TODO добавление товара в корзину
   }
-}
+};
 
 const getProductImage = (product) => {
   return product.images && product.images.length > 0 ? product.images[0] : imagePlaceholder

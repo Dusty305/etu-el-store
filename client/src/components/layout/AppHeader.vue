@@ -24,7 +24,13 @@
               variant="outline"
               class="cart-button"
           >
-            🛒 Корзина
+            🛒 Корзина <span v-if="cartStore.cartCount > 0" class="cart-badge">{{ cartStore.cartCount }}</span>
+          </BaseButton>
+        </div>
+
+        <div class="nav-item" @click="goToOrders" v-if="authStore.isAuthenticated">
+          <BaseButton variant="outline" class="orders-button">
+            📋 Заказы
           </BaseButton>
         </div>
 
@@ -41,10 +47,12 @@
 <script setup>
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth.js';
+import { useCartStore } from '../../stores/cart.js';
 import BaseButton from '../ui/BaseButton.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const cartStore = useCartStore();
 
 const goToAdmin = () => {
   router.push('/admin');
@@ -60,9 +68,12 @@ const handleAuthClick = () => {
   if (authStore.isAuthenticated) {
     router.push('/profile');
   } else {
-    // Перенаправляем на страницу авторизации
     router.push('/auth');
   }
+};
+
+const goToOrders = () => {
+  router.push('/orders');
 };
 </script>
 
@@ -108,5 +119,14 @@ const handleAuthClick = () => {
 .logo-link {
   text-decoration: none;
   color: inherit;
+}
+
+.cart-badge {
+  background: #dc3545;
+  color: white;
+  border-radius: 50%;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.8rem;
+  margin-left: 0.3rem;
 }
 </style>
