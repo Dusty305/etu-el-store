@@ -127,21 +127,7 @@ const successMessage = ref('');
 
 // Создаем плоский список всех категорий с путями для выпадающего списка
 const flatCategories = computed(() => {
-  const flatten = (categories, path = '') => {
-    let result = [];
-    categories.forEach(cat => {
-      const currentPath = path ? `${path} → ${cat.name}` : cat.name;
-      result.push({
-        ...cat,
-        nameWithPath: currentPath
-      });
-      if (cat.children && cat.children.length > 0) {
-        result = result.concat(flatten(cat.children, currentPath));
-      }
-    });
-    return result;
-  };
-  return flatten(adminCategoriesStore.categories);
+  return adminCategoriesStore.flatten(adminCategoriesStore.categories);
 });
 
 const validateCreateForm = () => {

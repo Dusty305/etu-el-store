@@ -1,7 +1,7 @@
 <template>
   <div class="category-tree-node"
       :style="{ marginLeft: `${level * 20}px` }"
-      @click="selectCategory">
+  >
     <span class="category-name"
       :data-selected="isSelected"
       @click="categorySelected">
@@ -15,15 +15,15 @@
           :category="child"
           :level="level + 1"
           :allCategories="allCategories"
-          :selected="false"
-          @selected="(...args) => $emit('selected', ...args)"
+          :selectedCategoryId="selectedCategoryId"
+          @selected="$emit('selected', $event)"
       />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed } from 'vue';
 
 const props = defineProps({
   category: {
@@ -38,24 +38,29 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  selected: {
-    type: Boolean,
-    default: () => false
+  selectedCategoryId: {
+    type: String,
+    default: null
   }
 });
 
 const emit = defineEmits(['selected']);
 
-const isSelected = ref(false)
+const isSelected = computed(() => props.category._id === props.selectedCategoryId);
 
 const categorySelected = () => {
-  isSelected.value = !isSelected.value
-
-  emit('selected', {
-    categoryId: props.category._id,
-    value: isSelected.value
-  });
-}
+  if (isSelected.value) {
+    emit('selected', {
+      categoryId: props.category._id,
+      value: false
+    });
+  } else {
+    emit('selected', {
+      categoryId: props.category._id,
+      value: true
+    });
+  }
+};
 </script>
 
 <style scoped>

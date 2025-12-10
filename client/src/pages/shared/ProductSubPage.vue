@@ -14,6 +14,7 @@
             :src="getProductImage(product)" 
             :alt="product.name"
             @error="handleImageError"
+            style="max-width: 100%"
           >
         </div>
         

@@ -78,6 +78,21 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
         error.value = null;
     };
 
+    const flatten = (categories, path = '') => {
+    let result = [];
+    categories.forEach(cat => {
+      const currentPath = path ? `${path} → ${cat.name}` : cat.name;
+      result.push({
+        ...cat,
+        nameWithPath: currentPath
+      });
+      if (cat.children && cat.children.length > 0) {
+        result = result.concat(flatten(cat.children, currentPath));
+      }
+    });
+    return result;
+  };
+
     return {
         categories,
         isLoading,
@@ -86,6 +101,7 @@ export const useAdminCategoriesStore = defineStore('adminCategories', () => {
         createCategory,
         updateCategory,
         deleteCategory,
-        clearError
+        clearError,
+        flatten
     };
 });
