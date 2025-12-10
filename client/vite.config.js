@@ -10,6 +10,10 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:5000', // Ваш Express сервер
         changeOrigin: true
+      },
+      '/uploads': {
+        target: 'http://localhost:5000',
+        changeOrigin: true
       }
     }
   },
