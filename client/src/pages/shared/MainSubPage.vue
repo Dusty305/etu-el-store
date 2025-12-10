@@ -12,6 +12,41 @@
         </div>
       </div>
 
+      <div class="breadcrumbs">
+        <a v-if="breadcrumbs.length > 0"
+          href="#" 
+          @click.prevent="goToHomePage" 
+          class="breadcrumb-item"
+        >
+          Главная
+        </a>
+        <span v-else class="breadcrumb-item-off">
+          Главная
+        </span>
+        <span class="breadcrumb-separator">/</span>
+        
+        <template v-for="(crumb, index) in breadcrumbs" :key="crumb._id">
+          <a 
+            href="#" 
+            v-if="index < breadcrumbs.length - 1"
+            @click.prevent="selectBreadcrumb(crumb._id)"
+            class="breadcrumb-item"
+          >
+            {{ crumb.name }}
+          </a>
+          <span v-else class="breadcrumb-item current">
+            {{ crumb.name }}
+          </span>
+          
+          <span 
+            v-if="index < breadcrumbs.length - 1" 
+            class="breadcrumb-separator"
+          >
+            /
+          </span>
+        </template>
+      </div>
+
       <div class="header-fields-section">
         <button class="show-categories-btn" @click="showCategories = !showCategories">
           <span>{{ showCategories ? 'Скрыть' : 'Показать' }} категории</span>
@@ -50,7 +85,7 @@
                   :category="category"
                   :level="0"
                   :allCategories="flatCategories"
-                  :selected=false
+                  :selectedCategoryId="selectedCategory"
                   @selected="handleSelected"
             />
           </div>
@@ -107,7 +142,7 @@ const productStore = useProductStore();
 const router = useRouter()
 
 const showCategories = ref(false)
-const selectedCategories = ref(new Set)
+const selectedCategory = ref(null)
 const searchQuery = ref('')
 
 const username = computed(() => {
@@ -116,18 +151,50 @@ const username = computed(() => {
 
 const filteredProducts = computed(() => productStore.products)
 
-const handleSelected = (data) => {
-  if (data.value) {
-    selectedCategories.value.add(data.categoryId)
+const breadcrumbs = computed(() => {
+  if (!selectedCategory.value) {
+    return [];
   }
-  else {
-    selectedCategories.value.delete(data.categoryId)
+
+  const category = flatCategories.value.find(c => c._id === selectedCategory.value);
+  
+  if (!category) return [];
+
+  const crumbs = [];
+  let currentCat = category;
+  
+  while (currentCat) {
+    crumbs.unshift(currentCat);
+    currentCat = currentCat.parentId 
+      ? flatCategories.value.find(c => c._id === currentCat.parentId)
+      : null;
   }
-  handleSearch()
-}
+  
+  return crumbs;
+});
+
+const goToHomePage = () => {
+  selectedCategory.value = null;
+  handleSearch();
+};
+
+const selectBreadcrumb = (categoryId) => {
+  selectedCategory.value = categoryId;
+  handleSearch();
+};
+
+const handleSelected = ({ categoryId, value }) => {
+  if (value) {
+    selectedCategory.value = categoryId;
+  } else if (selectedCategory.value === categoryId) {
+    selectedCategory.value = null;
+  }
+  handleSearch();
+};
 
 const handleSearch = async () => {
-  const result = await productStore.findProducts(searchQuery.value, Array.from(selectedCategories.value));
+  console.log(selectedCategory.value)
+  const result = await productStore.findProducts(searchQuery.value, [ selectedCategory.value ]);
   productStore.products = result.value
 }
 
@@ -182,6 +249,54 @@ onMounted(() => {
   text-align: right;
   background: #f8f9fa;
   border-radius: 8px;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 10px 15px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  flex-wrap: wrap;
+}
+
+.breadcrumb-item-off {
+  font-size: 14px;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.breadcrumb-item {
+  color: #007bff;
+  text-decoration: none;
+  font-size: 14px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.breadcrumb-item:hover {
+  background-color: #e9ecef;
+  text-decoration: underline;
+}
+
+.breadcrumb-item.current {
+  color: #6c757d;
+  cursor: default;
+  font-weight: 500;
+}
+
+.breadcrumb-item.current:hover {
+  background-color: transparent;
+  text-decoration: none;
+}
+
+.breadcrumb-separator {
+  margin: 0 8px;
+  color: #6c757d;
+  user-select: none;
 }
 
 .products-content
