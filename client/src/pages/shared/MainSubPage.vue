@@ -95,6 +95,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth.js';
 import { useProductStore } from '../../stores/product.js';
 import { useAdminCategoriesStore } from '../../stores/adminCategories.js';
+import { useCartStore } from '../../stores/cart.js';
 import CategoryTreeNodeView from '../../components/product/CategoryTreeNodeView.vue';
 import BaseButton from '../../components/ui/BaseButton.vue';
 
@@ -104,6 +105,7 @@ const imagePlaceholderUrl = '/src/uploads/product_placeholder.png'
 const adminCategoriesStore = useAdminCategoriesStore();
 const authStore = useAuthStore();
 const productStore = useProductStore();
+const cartStore = useCartStore();
 const router = useRouter()
 
 const showCategories = ref(false)
@@ -135,15 +137,24 @@ const redirectToProduct = (productId) => {
   router.push(`/product/${productId}`)
 }
 
-const addToCart = (product) => {
-  // TODO Реализовать логику добавления в корзину
+const addToCart = async (product) => {
   if (!authStore.isAuthenticated) {
-    alert("Необходимо авторизоваться!")
+    alert("Необходимо авторизоваться!");
+    router.push('/auth');
+    return;
   }
-  else {
-    
+
+  try {
+    const result = await cartStore.addToCart(product._id, 1);
+    if (result.success) {
+      alert(`Товар "${product.name}" добавлен в корзину!`);
+    } else {
+      alert(result.error || 'Ошибка добавления в корзину');
+    }
+  } catch (error) {
+    alert('Ошибка добавления в корзину');
   }
-}
+};
 
 const flatCategories = computed(() => {
   const flatten = (categories, path = '') => {
