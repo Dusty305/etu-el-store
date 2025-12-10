@@ -45,7 +45,7 @@ const routes = [
             },
             {
                 path: 'orders/:orderId',
-                name: 'Детали заказа',
+                name: 'Детали заказа (пользователь)',
                 component: () => import('../pages/user/OrderDetailsPage.vue'),
                 meta: { requiresAuth: true }
             },
@@ -80,12 +80,12 @@ const routes = [
             },
             {
                 path: 'orders',
-                name: 'Заказы',
+                name: 'ЗаказыАдмин',
                 component: () => import('../pages/admin/OrdersSubPage.vue'),
             },
             {
                 path: 'orders/:orderId',
-                name: 'Детали заказа',
+                name: 'Детали заказа (админ)',
                 component: () => import('../pages/admin/OrderDetailsSubPage.vue'),
             },
             {
@@ -94,13 +94,13 @@ const routes = [
                 component: () => import('../pages/admin/CategoriesSubPage.vue'),
             },
             {
-                path: '',
-                redirect: { name: 'Товары' }
-            },
-            {
                 path: 'users',
                 name: 'Пользователи',
                 component: () => import('../pages/admin/UsersSubPage.vue'),
+            },
+            {
+                path: '',
+                redirect: { name: 'Товары' }
             }
         ]
     },
