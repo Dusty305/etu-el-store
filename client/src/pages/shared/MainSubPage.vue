@@ -100,7 +100,7 @@
             <div @click="redirectToProduct(product._id)">
               <div class="product-image">
                 <img 
-                  :src="`http://localhost:5000/${getProductImage(product)}`"
+                  :src="getProductImage(product)"
                   :alt="product.name"
                 >
               </div>
