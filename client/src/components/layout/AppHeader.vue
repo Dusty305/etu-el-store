@@ -28,6 +28,12 @@
           </BaseButton>
         </div>
 
+        <div class="nav-item" @click="goToOrders" v-if="authStore.isAuthenticated">
+          <BaseButton variant="outline" class="orders-button">
+            📋 Заказы
+          </BaseButton>
+        </div>
+
         <div class="nav-item" @click="handleAuthClick">
           <BaseButton variant="primary" class="auth-button">
             {{ authStore.isAuthenticated ? '👤 Профиль' : 'Войти' }}
@@ -64,6 +70,10 @@ const handleAuthClick = () => {
   } else {
     router.push('/auth');
   }
+};
+
+const goToOrders = () => {
+  router.push('/orders');
 };
 </script>
 

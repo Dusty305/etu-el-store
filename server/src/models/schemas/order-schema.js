@@ -1,3 +1,4 @@
+// src/models/schemas/order-schema.js (обновление)
 import mongoose from "mongoose";
 
 export default new mongoose.Schema({
@@ -21,11 +22,13 @@ export default new mongoose.Schema({
     deliveryInfo: {
         address: {
             type: String,
-            required: true
+            required: false,
+            default: ''
         },
         deliveryTime: {
             type: Date,
-            required: true
+            required: false,
+            default: null
         },
         courierNotes: {
             type: String,
@@ -35,23 +38,26 @@ export default new mongoose.Schema({
     paymentInfo: {
         cardNumber: {
             type: String,
-            required: true,
+            required: false,
+            default: '',
             match: [/^\d{16}$/, 'Неверный формат номера карты'],
         },
         cvc: {
             type: String,
-            required: true,
-            match: [/^\d{3}$/, 'CVC должен содержать 3 или 4 цифры'],
+            required: false,
+            default: '',
+            match: [/^\d{3}$/, 'CVC должен содержать 3 цифры'],
         },
         expirationDate: {
             type: String,
-            required: true,
-            match: [/^(0[1-9]|1[0-2])\/?([0-9]{2})$/, 'Неверный формат срока действия (MM/YY)'],
+            required: false,
+            default: '',
+            match: [/^(0[1-9]|1[0-2])\/\d{2}$/, 'Неверный формат срока действия (MM/YY)'],
         },
     },
     status: {
         type: String,
-        enum: ['НОВЫЙ', 'ОПЛАЧЕН', 'ОТМЕНЁН', 'ВЫПОЛНЕН'],
+        enum: ['НОВЫЙ', 'ОПЛАЧЕН', 'ДОСТАВЛЕН', 'ОТМЕНЁН'],
         default: 'НОВЫЙ'
     },
     totalAmount: {

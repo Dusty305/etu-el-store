@@ -104,15 +104,14 @@
             Очистить корзину
           </BaseButton>
 
-          <router-link to="/checkout">
-            <BaseButton
-                variant="primary"
-                class="checkout-btn"
-                :disabled="cartStore.isLoading"
-            >
-              Перейти к оформлению
-            </BaseButton>
-          </router-link>
+          <BaseButton
+              @click="goToCheckout"
+              variant="primary"
+              class="checkout-btn"
+              :disabled="cartStore.isLoading || cartStore.isEmpty"
+          >
+            Оформить заказ
+          </BaseButton>
         </div>
       </div>
     </div>
@@ -182,6 +181,10 @@ const clearCart = async () => {
   if (confirm('Очистить всю корзину?')) {
     await cartStore.clearCart();
   }
+};
+
+const goToCheckout = () => {
+  router.push('/checkout');
 };
 
 onMounted(async () => {
