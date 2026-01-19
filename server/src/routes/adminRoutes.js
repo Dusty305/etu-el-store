@@ -6,12 +6,20 @@ import {
     deleteCategory,
     getCategoryTree
 } from '../controllers/adminCategoryController.js';
+
 import {
     getAllOrders,
     getOrderDetails,
     updateOrderStatus,
     markOrderAsDelivered
 } from '../controllers/adminOrderController.js';
+
+import {
+    createProduct,
+    updateProduct,
+    deleteProduct
+} from '../controllers/adminProductController.js'
+
 import { requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -31,5 +39,10 @@ router.get('/orders', requireAdmin, getAllOrders);
 router.get('/orders/:orderId', requireAdmin, getOrderDetails);
 router.patch('/orders/:orderId/status', requireAdmin, updateOrderStatus);
 router.post('/orders/:orderId/deliver', requireAdmin, markOrderAsDelivered);
+
+// Управление продуктами
+router.post('/products', createProduct)
+router.put('/products/:productId', updateProduct)
+router.delete('/products/:productId', deleteProduct)
 
 export default router;
