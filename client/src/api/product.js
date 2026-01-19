@@ -17,6 +17,10 @@ export const productAPI = {
     },
 
     async findProducts(searchString, categories) {
-        return handle_fetch(`${API_BASE}/search?w=${searchString}&c=${categories.join(',')}`)
+        let req = `${API_BASE}/search?w=${searchString}`;
+        if (categories) {
+            req += `&c=${categories.join(',')}`;
+        }
+        return handle_fetch(req)
     },
 };

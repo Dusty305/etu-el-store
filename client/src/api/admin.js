@@ -109,8 +109,10 @@ export const adminOrdersAPI = {
 };
 
 export const adminProductsAPI = {
-    async getProducts() {
-        return productAPI.getAllProducts()
+    async getProducts(searchString) {
+        return searchString
+            ? await productAPI.findProducts(searchString)
+            : await productAPI.getAllProducts();
     },
 
     async getOneProduct(productId) {

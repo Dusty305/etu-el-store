@@ -130,7 +130,7 @@ const handleSearch = () => {
 
 const loadProducts = (page = 1) => {
   //adminProductStore.loadProducts(page, 10, search.value);
-  adminProductsStore.loadProducts()
+  adminProductsStore.loadProducts(search.value)
 };
 
 const openEditModal = (product = null) => {

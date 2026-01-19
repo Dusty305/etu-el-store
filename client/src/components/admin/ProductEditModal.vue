@@ -198,7 +198,7 @@ const handleSubmit = async () => {
 }
 
 const handleImageUpload = (event) => {
-  const files = Array.from(event.target.files)
+  let files = Array.from(event.target.files)
   if (files.length > 10) {
     alert('Выбрано более 10 файлов, оставшиеся загружены не будут')
     files = files.slice(0, 10)

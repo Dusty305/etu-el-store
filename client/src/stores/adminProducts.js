@@ -7,12 +7,12 @@ export const useAdminProductsStore = defineStore('adminProducts', () => {
     const isLoading = ref(false);
     const error = ref(null);
 
-    const loadProducts = async () => {
+    const loadProducts = async (searchString) => {
         isLoading.value = true;
         error.value = null;
 
         try {
-            const response = await adminProductsAPI.getProducts();
+            const response = await adminProductsAPI.getProducts(searchString);
             products.value = response.products;
             return { success: true };
         } catch (err) {
