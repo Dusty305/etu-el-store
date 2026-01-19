@@ -47,6 +47,14 @@
             <td class="actions">
               <BaseButton
                   class="edit-action"
+                  @click="viewProductPage(product._id)"
+                  variant="outline"
+                  size="small"
+              >
+                🏷️ Карточка
+              </BaseButton>
+              <BaseButton
+                  class="edit-action"
                   @click="editProduct(product._id)"
                   variant="outline"
                   size="small"
@@ -108,6 +116,9 @@ import BaseInput from '../../components/ui/BaseInput.vue';
 import BaseButton from '../../components/ui/BaseButton.vue';
 import ProductEditModal from '../../components/admin/ProductEditModal.vue'
 import { useAdminCategoriesStore } from '../../stores/adminCategories.js'
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const adminCategories = useAdminCategoriesStore()
 
@@ -149,6 +160,10 @@ const handleSaveProduct = async (productData) => {
   } else {
     await adminProductsStore.createProduct(productData)
   }
+}
+
+const viewProductPage = (productId) => {
+  router.push(`/product/${productId}`);
 }
 
 const editProduct = async (productId) => {
