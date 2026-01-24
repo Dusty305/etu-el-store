@@ -47,8 +47,8 @@ export const useAdminProductsStore = defineStore('adminProducts', () => {
             delete productData.images;
 
             const response = await adminProductsAPI.createProduct(productData);
-            const response2 = await adminProductsAPI.uploadImages(response.productId, images);
-            await adminProductsAPI.updateProduct(response.productId, { images: response2.files })
+            /*const response2 = */await adminProductsAPI.uploadImages(response.productId, images);
+            // await adminProductsAPI.updateProduct(response.productId, { images: response2.files })
             await loadProducts();
             return { success: true };
         } catch (err) {
@@ -64,8 +64,22 @@ export const useAdminProductsStore = defineStore('adminProducts', () => {
         error.value = null;
 
         try {
+            const { oldImages, newImages } = productData.images.reduce((imagesResult, img) => {
+                if (img.url) {
+                    imagesResult.newImages.push(img);
+                } else {
+                    imagesResult.oldImages.push(img);
+                }
+                return imagesResult;
+            }, { newImages: [], oldImages: [] });
+            productData.images = oldImages;
+
             const response = await adminProductsAPI.updateProduct(productId, productData);
+            if (newImages.length) {
+                await adminProductsAPI.uploadImages(productId, newImages);
+            }
             await loadProducts();
+
             return { success: true, product: response.product };
         } catch (err) {
             error.value = err.message || 'Ошибка обновления товара';
@@ -81,7 +95,7 @@ export const useAdminProductsStore = defineStore('adminProducts', () => {
 
         try {
             const response = await adminProductsAPI.deleteProduct(productId);
-            await adminProductsAPI.deleteImages(response.productId);
+            // await adminProductsAPI.deleteImages(response.productId);
             await loadProducts();
             return { success: true };
         } catch (err) {

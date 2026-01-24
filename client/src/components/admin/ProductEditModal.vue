@@ -89,7 +89,7 @@
                   :key="index"
                   class="preview-item"
                 >
-                  <img :src="image.url" :alt="'Изображение ' + (index + 1)" />
+                  <img :src="image.url || image" :alt="'Изображение ' + (index + 1)" />
                   <button
                     type="button"
                     @click="removeImage(index)"

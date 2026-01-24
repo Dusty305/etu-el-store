@@ -1,4 +1,5 @@
 import Product from '../models/Product.js';
+import {deleteProductDir, deleteProductFile} from "../utils/fileUtils.js";
 
 export const createProduct = async (req, res) => {
     try {
@@ -42,7 +43,17 @@ export const updateProduct = async (req, res) => {
             return res.status(404).json({ error: 'Продукт не найден' });
         }
 
+        const oldImages = new Set(product.images);
         const updatedProduct = await Product.findByIdAndUpdate(productId, req.body);
+
+        if (req.body.images) {
+            const newImages = new Set(req.body.images);
+            const imagesToDelete = oldImages.difference(newImages);
+            for (let img of imagesToDelete) {
+                img = img.split('/').at(-1);
+                await deleteProductFile(productId, img);
+            }
+        }
 
         res.status(201).json({
             message: 'Продукт успешно обновлен',
@@ -63,6 +74,7 @@ export const deleteProduct = async (req, res) => {
             return res.status(404).json({ error: 'Продукт не найден' });
         }
 
+        await deleteProductDir(productId);
         await Product.findByIdAndDelete(productId);
 
         res.status(201).json({
